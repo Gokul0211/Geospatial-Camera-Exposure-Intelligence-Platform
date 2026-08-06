@@ -1,0 +1,9 @@
+# Place your demo/evaluation video clips in this directory.
+#
+# DO NOT commit actual video files to git — they are too large.
+# Add video file extensions to .gitignore instead.
+#
+# See video_pipeline/README.md for:
+#   - Recommended public datasets
+#   - How to map footage to demo camera_ids
+#   - Licensing requirements for your report

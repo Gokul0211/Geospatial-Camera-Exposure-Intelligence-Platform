@@ -1,0 +1,19 @@
+# video_pipeline/requirements.txt
+# ================================
+# KEEP SEPARATE from backend/requirements.txt.
+# ultralytics pulls in torch (1-2+ GB) which would make the main API image
+# needlessly huge and slow to rebuild during normal backend development.
+# This file is only used when building the video_pipeline Docker image.
+
+# Core ML / detection
+ultralytics>=8.3.0        # YOLOv8 + built-in ByteTrack tracker
+opencv-python-headless>=4.10.0  # headless for Docker (no GUI deps)
+
+# HTTP client to POST detection events to the backend
+httpx>=0.28.0
+
+# Config / env
+python-dotenv>=1.0.1
+
+# Testing (no torch needed for rule tests — kept lightweight)
+pytest>=8.0.0
