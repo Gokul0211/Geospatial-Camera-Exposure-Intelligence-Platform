@@ -117,10 +117,13 @@ async def init_db():
         # alerts: core of COBRA-WATCH — one row per detection event that was
         # processed through the trust-score pipeline. Replaces the fake WebSocket
         # random.choice() block once Phase 2 is wired in.
+        # city is denormalized here (copied from devices.city at ingest time)
+        # so GET /api/alerts?city= can filter without a join.
         await db.execute("""
             CREATE TABLE IF NOT EXISTS alerts (
                 id TEXT PRIMARY KEY,
                 camera_id TEXT NOT NULL,
+                city TEXT,
                 event_type TEXT NOT NULL,
                 detected_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 trust_score INTEGER NOT NULL,
@@ -139,6 +142,10 @@ async def init_db():
         # New indexes for alert queries (Phase 2)
         await db.execute("CREATE INDEX IF NOT EXISTS idx_alerts_camera ON alerts(camera_id)")
         await db.execute("CREATE INDEX IF NOT EXISTS idx_alerts_time ON alerts(detected_at)")
+        await db.execute("CREATE INDEX IF NOT EXISTS idx_alerts_city ON alerts(city)")
+
+        # Idempotent migration: add city to alerts for DBs created before Phase 2
+        await _add_column_if_missing(db, "alerts", "city", "TEXT")
 
         await db.commit()
 
