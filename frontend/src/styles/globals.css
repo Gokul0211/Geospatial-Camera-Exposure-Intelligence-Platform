@@ -1,0 +1,603 @@
+/* Global Styling and Dashboard Design System for SurveillanceWatch */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+:root {
+  /* Color Palette */
+  --bg-primary: #080b11;
+  --bg-secondary: #0f141f;
+  --bg-tertiary: #161d2d;
+  
+  --border-color: #1e293b;
+  --border-focus: #3b82f6;
+  
+  /* Typography */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  
+  /* Text Colors */
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  
+  /* Threat / Status Levels */
+  --color-critical: #ef4444;
+  --color-high: #f97316;
+  --color-medium: #eab308;
+  --color-low: #10b981;
+  --color-info: #3b82f6;
+  
+  /* Gradients */
+  --gradient-header: linear-gradient(90deg, #0f141f 0%, #161d2d 100%);
+  --gradient-glow: radial-gradient(circle, rgba(59, 130, 246, 0.1) 0%, rgba(0,0,0,0) 70%);
+  
+  /* Layout Constants */
+  --header-height: 60px;
+  --stats-height: 70px;
+  --border-radius: 8px;
+  --transition-speed: 0.2s;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  line-height: 1.5;
+  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+}
+
+a {
+  color: var(--color-info);
+  text-decoration: none;
+  transition: opacity var(--transition-speed);
+}
+
+a:hover {
+  opacity: 0.8;
+}
+
+button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  color: inherit;
+}
+
+/* Core Dashboard Layout */
+.dashboard-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+}
+
+.dashboard-content {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  flex: 1;
+  overflow: hidden;
+}
+
+.main-grid {
+  display: grid;
+  grid-template-columns: 320px 1fr 360px;
+  gap: 16px;
+  padding: 16px;
+  overflow: hidden;
+  height: calc(100vh - var(--header-height) - var(--stats-height));
+}
+
+/* Component Shell Styling */
+.panel {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: border-color var(--transition-speed);
+}
+
+.panel:hover {
+  border-color: #273754;
+}
+
+.panel-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-color);
+  background-color: rgba(22, 29, 45, 0.4);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.panel-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.panel-content {
+  padding: 16px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+/* Navbar */
+.navbar {
+  height: var(--header-height);
+  background: var(--gradient-header);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 24px;
+}
+
+.navbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.navbar-logo {
+  width: 24px;
+  height: 24px;
+  background-color: var(--color-info);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 0.75rem;
+  color: var(--bg-primary);
+}
+
+.navbar-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.navbar-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.status-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--color-low);
+  box-shadow: 0 0 8px var(--color-low);
+}
+
+/* Stats Bar */
+.stats-bar {
+  height: var(--stats-height);
+  background-color: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 16px;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding-left: 16px;
+  border-left: 2px solid var(--border-color);
+  flex: 1;
+}
+
+.stat-item:first-child {
+  padding-left: 0;
+  border-left: none;
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.stat-value {
+  font-family: var(--font-mono);
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+/* Surveillance Map */
+.map-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background-color: var(--bg-tertiary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-image: radial-gradient(rgba(30, 41, 59, 0.5) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+.map-placeholder-overlay {
+  text-align: center;
+  z-index: 10;
+}
+
+.map-hud {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  background-color: rgba(15, 20, 31, 0.85);
+  backdrop-filter: blur(4px);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  padding: 12px;
+  z-index: 20;
+}
+
+/* Detail Panel */
+.detail-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.metadata-grid {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px 16px;
+  font-size: 0.875rem;
+}
+
+.metadata-label {
+  color: var(--text-muted);
+}
+
+.metadata-value {
+  font-family: var(--font-mono);
+  text-align: right;
+  word-break: break-all;
+}
+
+/* Risk Brief */
+.risk-brief {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.risk-card {
+  background-color: rgba(22, 29, 45, 0.5);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: background-color var(--transition-speed);
+}
+
+.risk-card:hover {
+  background-color: rgba(22, 29, 45, 0.8);
+}
+
+.risk-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.risk-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.risk-badge.critical { background-color: rgba(239, 68, 68, 0.2); color: var(--color-critical); }
+.risk-badge.high { background-color: rgba(249, 115, 22, 0.2); color: var(--color-high); }
+.risk-badge.medium { background-color: rgba(234, 179, 8, 0.2); color: var(--color-medium); }
+.risk-badge.low { background-color: rgba(16, 185, 129, 0.2); color: var(--color-low); }
+
+/* Monospace & General Tech Elements */
+.mono {
+  font-family: var(--font-mono);
+}
+
+.loading-indicator {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  border-top-color: var(--color-info);
+  animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* City Selector styling */
+.city-selector-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.city-select {
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  padding: 6px 12px;
+  border-radius: var(--border-radius);
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  outline: none;
+  cursor: pointer;
+  transition: border-color var(--transition-speed);
+}
+
+.city-select:focus {
+  border-color: var(--border-focus);
+}
+
+/* Leaflet integration styles */
+.map-container .leaflet-container {
+  width: 100%;
+  height: 100%;
+  background-color: var(--bg-tertiary) !important;
+}
+
+/* Tactical zoom and layout overrides */
+.leaflet-bar {
+  border: 1px solid var(--border-color) !important;
+  background-color: var(--bg-secondary) !important;
+}
+
+.leaflet-bar a {
+  background-color: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+  border-bottom: 1px solid var(--border-color) !important;
+}
+
+.leaflet-bar a:hover {
+  background-color: var(--bg-tertiary) !important;
+}
+
+/* Custom dark-theme styling for Leaflet popups */
+.leaflet-popup-content-wrapper {
+  background-color: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: var(--border-radius) !important;
+  font-family: var(--font-sans) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5) !important;
+}
+
+.leaflet-popup-tip {
+  background-color: var(--bg-secondary) !important;
+  border: 1px solid var(--border-color) !important;
+}
+
+/* Selected marker visual highlight and pulse animation */
+.surveillance-marker-selected > div {
+  outline: 2px solid var(--text-primary) !important;
+  outline-offset: 3px;
+  animation: pulse-marker 1.8s infinite ease-in-out;
+  transform: scale(1.1);
+}
+
+@keyframes pulse-marker {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.6);
+  }
+  50% {
+    transform: scale(1.15);
+    box-shadow: 0 0 25px rgba(59, 130, 246, 0.9);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.6);
+  }
+}
+
+/* Distinct Blue News Marker Styles */
+.news-marker {
+  width: 28px !important;
+  height: 28px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.news-marker-selected > .news-marker-inner {
+  outline: 2px solid var(--text-primary) !important;
+  outline-offset: 3px;
+  animation: pulse-news-marker 1.8s infinite ease-in-out;
+  transform: scale(1.1);
+}
+
+@keyframes pulse-news-marker {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.6);
+  }
+  50% {
+    transform: scale(1.15);
+    box-shadow: 0 0 25px rgba(59, 130, 246, 0.9);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.6);
+  }
+}
+
+
+
+
+
+
+
+
+/* Entity Link Graph Animation */
+.animated-laser-line {
+  animation: pulse-laser 1s infinite alternate, flow-dash 10s linear infinite;
+}
+
+@keyframes pulse-laser {
+  0% { filter: drop-shadow(0 0 1px #e74c3c) drop-shadow(0 0 3px #e74c3c); opacity: 0.5; stroke-width: 1.5; }
+  100% { filter: drop-shadow(0 0 4px #e74c3c) drop-shadow(0 0 8px #e74c3c); opacity: 1; stroke-width: 2.5; }
+}
+
+@keyframes flow-dash {
+  to {
+    stroke-dashoffset: -200;
+  }
+}
+
+/* Public Gov Feed Marker Pulse */
+@keyframes pulse-feed {
+  0%   { box-shadow: 0 0 4px #00e5ff, 0 0 8px #00e5ff88; opacity: 0.9; transform: scale(1); }
+  50%  { box-shadow: 0 0 10px #00e5ff, 0 0 22px #00e5ffcc; opacity: 1; transform: scale(1.15); }
+  100% { box-shadow: 0 0 4px #00e5ff, 0 0 8px #00e5ff88; opacity: 0.9; transform: scale(1); }
+}
+
+/* ── Orbital Asset Tracker CSS ── */
+
+.sat-marker {
+  position: relative;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--bg-surface);
+  border: 1px solid var(--sat-color);
+  box-shadow: 0 0 10px var(--sat-glow);
+  z-index: 2000;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.sat-marker:hover {
+  transform: scale(1.15);
+  box-shadow: 0 0 15px var(--sat-color);
+  z-index: 2001;
+}
+
+.sat-icon {
+  font-size: 11px;
+  filter: drop-shadow(0 0 2px var(--sat-color));
+}
+
+.sat-label-block {
+  position: absolute;
+  left: 24px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  background: rgba(10,10,10,0.85);
+  border: 1px solid var(--border);
+  padding: 4px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s;
+  backdrop-filter: blur(4px);
+}
+
+.sat-marker:hover .sat-label-block {
+  opacity: 1;
+}
+
+.sat-name {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: 0.05em;
+}
+
+.sat-agency-tag {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 9px;
+  color: var(--sat-color);
+  text-transform: uppercase;
+}
+
+.sat-dist {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.sat-tooltip {
+  background: rgba(15, 20, 31, 0.95) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text-primary) !important;
+  font-family: 'IBM Plex Mono', monospace !important;
+  font-size: 11px !important;
+}
+
+/* Radar ping for active overhead satellites */
+.sat-ping {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: var(--sat-color);
+  transform: translate(-50%, -50%);
+  z-index: -1;
+  opacity: 0;
+}
+
+.sat-ping-active {
+  animation: orbital-ping 2.5s infinite ease-out;
+}
+
+@keyframes orbital-ping {
+  0% { transform: translate(-50%, -50%) scale(1); opacity: 0.5; }
+  100% { transform: translate(-50%, -50%) scale(3.5); opacity: 0; }
+}
+
+@keyframes pulse-dot {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.3); opacity: 0.7; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes orbital-pulse {
+  0% { background: rgba(255, 51, 51, 0.14); border-bottom-color: rgba(255, 51, 51, 0.3); }
+  50% { background: rgba(255, 51, 51, 0.25); border-bottom-color: rgba(255, 51, 51, 0.8); }
+  100% { background: rgba(255, 51, 51, 0.14); border-bottom-color: rgba(255, 51, 51, 0.3); }
+}
