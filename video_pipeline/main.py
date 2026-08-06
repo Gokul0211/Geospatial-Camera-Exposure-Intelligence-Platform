@@ -51,6 +51,10 @@ from config import (
     DEFAULT_RULES,
     LOG_LEVEL,
 )
+
+# Phase 4: read the detection API key from env so the pipeline can authenticate
+# its POST /api/detection-event requests. Empty = no auth (local dev default).
+DETECTION_API_KEY: str = os.getenv("DETECTION_API_KEY", "")
 from tracker import Tracker
 from rules import RuleEngine
 
@@ -112,6 +116,7 @@ def _post_detection_event(
 ) -> bool:
     """
     POST a detection event to /api/detection-event with retry logic.
+    Includes X-API-Key header if DETECTION_API_KEY is set.
     Returns True if successfully posted.
     """
     payload = {
@@ -121,12 +126,16 @@ def _post_detection_event(
         "detected_at": datetime.now(timezone.utc).isoformat(),
         "metadata": metadata,
     }
+    headers = {}
+    if DETECTION_API_KEY:
+        headers["X-API-Key"] = DETECTION_API_KEY
 
     for attempt in range(1, max_retries + 1):
         try:
             res = client.post(
                 f"{BACKEND_URL}/api/detection-event",
                 json=payload,
+                headers=headers,
                 timeout=10.0,
             )
             if res.status_code == 200:

@@ -24,6 +24,28 @@ export async function fetchStats(city) {
   return res.json();
 }
 
+/**
+ * Fetch recent alerts, optionally filtered by city.
+ * Returns { alerts: [...], count: number }
+ * Phase 4 addition — matches GET /api/alerts contract from Phase 2.
+ */
+export async function fetchAlerts(city, limit = 20) {
+  const res = await fetch(`${BASE}/alerts?city=${encodeURIComponent(city)}&limit=${limit}`);
+  if (!res.ok) throw new Error(`Failed to fetch alerts: ${res.status}`);
+  return res.json();
+}
+
+/**
+ * Fetch on-demand trust score for a specific camera.
+ * Returns { camera_id, trust_score, action_tier, contributing_factors, ... }
+ * Phase 4 addition — matches GET /api/devices/{id}/trust-score from Phase 2.
+ */
+export async function fetchCameraTrustScore(cameraId) {
+  const res = await fetch(`${BASE}/devices/${encodeURIComponent(cameraId)}/trust-score`);
+  if (!res.ok) throw new Error(`Failed to fetch trust score: ${res.status}`);
+  return res.json();
+}
+
 export async function generateBrief(briefRequest) {
   const res = await fetch(`${BASE}/brief`, {
     method: 'POST',

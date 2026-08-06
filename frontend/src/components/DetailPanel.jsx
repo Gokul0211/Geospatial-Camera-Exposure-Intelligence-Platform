@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ownerColor } from '../utils/colorMap';
+import { fetchCameraTrustScore } from '../utils/api';
+import TrustScoreBadge from './TrustScoreBadge';
 
 // Ports that indicate a potentially exposed camera interface
 const EXPOSED_PORTS = [554, 80, 8080, 8443, 37777];
@@ -226,11 +228,27 @@ PERIOD:      ${sat.period}s`}
 export default function DetailPanel({ selected, city, showLinks, onToggleLinks, onClose }) {
   const [reportSent, setReportSent] = useState(false);
   const [liveViewStatus, setLiveViewStatus] = useState('idle'); // 'idle' | 'connecting' | 'failed'
+  const [trustData, setTrustData] = useState(null);  // Phase 4: trust score for selected camera
+  const [trustLoading, setTrustLoading] = useState(false);
 
   // Reset state when selection changes
-  React.useEffect(() => {
+  useEffect(() => {
     setReportSent(false);
     setLiveViewStatus('idle');
+    setTrustData(null);
+
+    // Phase 4: fetch trust score when a device is selected
+    // Decision: we call the backend for the authoritative trust score (which uses
+    // the real Phase 1 auth_required field + CVE data) rather than re-deriving it
+    // client-side from the banner heuristic. The banner isConfirmedOpen() check is
+    // kept for the "confirmed open at scan time" warning which is a different signal.
+    if (selected?.type === 'device' && selected?.data?.id) {
+      setTrustLoading(true);
+      fetchCameraTrustScore(selected.data.id)
+        .then(data => setTrustData(data))
+        .catch(() => setTrustData(null)) // graceful: panel still works without trust score
+        .finally(() => setTrustLoading(false));
+    }
   }, [selected]);
 
   // Handle public gov feed type
@@ -304,6 +322,25 @@ export default function DetailPanel({ selected, city, showLinks, onToggleLinks, 
       </div>
 
       <div className="panel-content" style={{ overflowY: 'auto' }}>
+
+        {/* ──────────────────────────────────────────────────────
+            Phase 4: Trust Score — fetched from backend on select.
+            Shown only when trust data is available.
+            For cameras with no alerts yet, trust score is still
+            computed on-demand using their stored Phase 1 fields.
+           ────────────────────────────────────────────────────── */}
+        {trustLoading && (
+          <div style={{ marginBottom: 12, fontSize: '0.7rem', color: 'var(--text-muted)', fontFamily: 'IBM Plex Mono, monospace' }}>
+            ⟳ Computing trust score...
+          </div>
+        )}
+        {trustData && !trustLoading && (
+          <TrustScoreBadge
+            tier={trustData.action_tier}
+            score={trustData.trust_score}
+            factors={trustData.contributing_factors || []}
+          />
+        )}
 
         {/* ⚠ Exposed device warning */}
         {exposed && (

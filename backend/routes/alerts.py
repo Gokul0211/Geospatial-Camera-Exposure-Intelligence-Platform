@@ -28,10 +28,10 @@ from datetime import datetime, timezone
 from typing import Any
 
 import aiosqlite
-from fastapi import APIRouter, Depends, HTTPException, Header
+from fastapi import APIRouter, Depends, HTTPException, Header, Security
 from pydantic import BaseModel, Field
 
-from config import DATABASE_PATH
+from config import DATABASE_PATH, DETECTION_API_KEY
 from services.trust_score_service import compute_trust_score
 from services.corroboration_service import check_corroboration
 
@@ -50,15 +50,33 @@ def set_connection_manager(manager) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Optional API key dependency (Phase 4 ready — currently a no-op placeholder)
+# API key dependency — applied to POST /api/detection-event
 # ---------------------------------------------------------------------------
+# Open/closed split (deliberate, documented in report):
+#   PROTECTED:  POST /api/detection-event  — prevents fabricated alert injection
+#   OPEN:       all GET routes             — public surveillance transparency
+#
+# If DETECTION_API_KEY is empty (local dev default), auth is disabled.
+# Phase 2 designed this endpoint with Depends() so this is a one-line swap.
 
-async def _optional_api_key(x_api_key: str | None = Header(default=None)) -> str | None:
+async def _require_api_key(x_api_key: str | None = Header(default=None)) -> None:
     """
-    No-op placeholder so Phase 4 can add real key validation here in one line.
-    Swap the body to: `if x_api_key != EXPECTED_KEY: raise HTTPException(403)`
+    Enforce X-API-Key header on write endpoints.
+    - If DETECTION_API_KEY is empty: auth disabled (local dev convenience).
+    - If set: header must match exactly (constant-time comparison avoids timing attacks).
     """
-    return x_api_key
+    if not DETECTION_API_KEY:
+        return  # auth disabled in local dev / when no key configured
+    import hmac
+    if x_api_key is None or not hmac.compare_digest(x_api_key, DETECTION_API_KEY):
+        raise HTTPException(
+            status_code=403,
+            detail=(
+                "Invalid or missing X-API-Key. "
+                "Set X-API-Key: <your key> header when calling POST /api/detection-event. "
+                "GET routes do not require authentication."
+            ),
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -150,7 +168,7 @@ async def _save_alert(
 @router.post("/detection-event", response_model=AlertResponse)
 async def receive_detection_event(
     event: DetectionEvent,
-    _api_key: str | None = Depends(_optional_api_key),
+    _auth: None = Depends(_require_api_key),
 ):
     """
     Real detection event ingestion.

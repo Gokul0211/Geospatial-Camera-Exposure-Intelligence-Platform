@@ -12,6 +12,22 @@ NVD_API_KEY = os.getenv("NVD_API_KEY", "")  # https://nvd.nist.gov/developers/re
 DATABASE_PATH = os.getenv("DATABASE_PATH", os.path.join(BASE_DIR, "data", "surveillancewatch.db"))
 CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:5173").split(",")
 
+# API Authentication
+# ------------------
+# DETECTION_API_KEY protects POST /api/detection-event against fabricated alert injection.
+# An unauthenticated attacker being able to inject high-severity alerts is a real
+# threat to a "trust score" system — documented deliberate design choice (Phase 4).
+#
+# Open/closed split (intentional, documented in report):
+#   PROTECTED:  POST /api/detection-event  (requires X-API-Key header)
+#   OPEN:       all GET routes — /api/devices, /api/alerts, /api/stats, etc.
+#               The point of COBRA-WATCH is public surveillance transparency;
+#               locking the read routes behind auth defeats that purpose.
+#
+# If DETECTION_API_KEY is empty (default for local dev), auth is DISABLED.
+# Set it to a strong random value in production: openssl rand -hex 32
+DETECTION_API_KEY = os.getenv("DETECTION_API_KEY", "")
+
 CITIES = {
     "Mumbai":    {"lat": 19.0760, "lon": 72.8777, "zoom": 12},
     "Delhi":     {"lat": 28.6139, "lon": 77.2090, "zoom": 12},

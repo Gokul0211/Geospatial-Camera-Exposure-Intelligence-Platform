@@ -1,0 +1,170 @@
+[
+  {
+    "id": "eval-001",
+    "label": "genuine",
+    "description": "Loitering on unauthenticated government camera with 2 CVEs — should be low_trust",
+    "event": {
+      "camera_id": "EVAL_CAM_001",
+      "event_type": "loitering",
+      "confidence": 0.87,
+      "metadata": {"dwell_seconds": 12.5}
+    },
+    "device_profile": {
+      "auth_required": false,
+      "known_cve_count": 2,
+      "owner_type": "government",
+      "last_patch_date": "2019-05-01"
+    },
+    "corroborating_cameras": [],
+    "expected_tier": "low_trust",
+    "expected_score_range": [0, 49],
+    "notes": "auth(-30) + cve(-25) + firmware(-15) + no_corroboration(-10) = 20 → low_trust"
+  },
+  {
+    "id": "eval-002",
+    "label": "genuine",
+    "description": "Perimeter breach on authenticated telecom camera, recent patch, 2 corroborators — high_trust",
+    "event": {
+      "camera_id": "EVAL_CAM_002",
+      "event_type": "perimeter_breach",
+      "confidence": 0.92,
+      "metadata": {"line": [[0.0, 0.5], [1.0, 0.5]], "from_side": -1}
+    },
+    "device_profile": {
+      "auth_required": true,
+      "known_cve_count": 0,
+      "owner_type": "telecom",
+      "last_patch_date": "2025-01-15"
+    },
+    "corroborating_cameras": ["EVAL_CAM_003", "EVAL_CAM_004"],
+    "expected_tier": "high_trust",
+    "expected_score_range": [80, 100],
+    "notes": "corroboration(+20) = 120, clamped to 100 → high_trust"
+  },
+  {
+    "id": "eval-003",
+    "label": "genuine",
+    "description": "Loitering on unknown-owner camera, no CVE data, 1 corroborator — medium_trust",
+    "event": {
+      "camera_id": "EVAL_CAM_005",
+      "event_type": "loitering",
+      "confidence": 0.75,
+      "metadata": {"dwell_seconds": 8.0}
+    },
+    "device_profile": {
+      "auth_required": true,
+      "known_cve_count": 0,
+      "owner_type": "unknown",
+      "last_patch_date": "2024-03-10"
+    },
+    "corroborating_cameras": ["EVAL_CAM_006"],
+    "expected_tier": "medium_trust",
+    "expected_score_range": [50, 79],
+    "notes": "unknown_owner(-20) = 80, 1 corroborator (neutral) → 80 → high_trust boundary. With outdated (-15) = 65 medium_trust"
+  },
+  {
+    "id": "eval-004",
+    "label": "fabricated",
+    "description": "FABRICATED: spoofed corroboration via seeded fake adjacency — should still be low_trust due to device signals",
+    "event": {
+      "camera_id": "EVAL_CAM_007",
+      "event_type": "unauthorized_access",
+      "confidence": 0.95,
+      "metadata": {}
+    },
+    "device_profile": {
+      "auth_required": false,
+      "known_cve_count": 3,
+      "owner_type": "unknown",
+      "last_patch_date": null
+    },
+    "corroborating_cameras": ["FAKE_CAM_001", "FAKE_CAM_002"],
+    "expected_tier": "low_trust",
+    "expected_score_range": [0, 49],
+    "notes": "RED TEAM: even with spoofed corroboration(+20), auth(-30)+cve(-25)+owner(-20)+firmware(-15) = 100-90+20 = 30 → low_trust. The device signals are so bad the corroboration bonus can't rescue it."
+  },
+  {
+    "id": "eval-005",
+    "label": "fabricated",
+    "description": "FABRICATED: replayed event with same metadata as eval-002 — identical output expected (no replay protection in v1)",
+    "event": {
+      "camera_id": "EVAL_CAM_002",
+      "event_type": "perimeter_breach",
+      "confidence": 0.92,
+      "metadata": {"line": [[0.0, 0.5], [1.0, 0.5]], "from_side": -1}
+    },
+    "device_profile": {
+      "auth_required": true,
+      "known_cve_count": 0,
+      "owner_type": "telecom",
+      "last_patch_date": "2025-01-15"
+    },
+    "corroborating_cameras": ["EVAL_CAM_003", "EVAL_CAM_004"],
+    "expected_tier": "high_trust",
+    "expected_score_range": [80, 100],
+    "notes": "RED TEAM: replay of a genuine high-trust event. v1 has no replay protection — documented limitation. The alert ID will differ but trust score is identical. Documented in red_team_findings.md."
+  },
+  {
+    "id": "eval-006",
+    "label": "fabricated",
+    "description": "FABRICATED: attacker POSTs with missing CVE field to boost score — but backend reads from DB, not from payload",
+    "event": {
+      "camera_id": "EVAL_CAM_007",
+      "event_type": "loitering",
+      "confidence": 0.99,
+      "metadata": {"injected_cve_count": 0}
+    },
+    "device_profile": {
+      "auth_required": false,
+      "known_cve_count": 3,
+      "owner_type": "unknown",
+      "last_patch_date": null
+    },
+    "corroborating_cameras": [],
+    "expected_tier": "low_trust",
+    "expected_score_range": [0, 49],
+    "notes": "RED TEAM: attacker tries to override CVE count via metadata payload — this fails because the backend loads device data from DB, not from the request body. The fabricated metadata field is ignored."
+  },
+  {
+    "id": "eval-007",
+    "label": "genuine",
+    "description": "Anomalous motion on authenticated corporate camera, 1 CVE, patched last year — medium_trust",
+    "event": {
+      "camera_id": "EVAL_CAM_008",
+      "event_type": "anomalous_motion",
+      "confidence": 0.68,
+      "metadata": {}
+    },
+    "device_profile": {
+      "auth_required": true,
+      "known_cve_count": 1,
+      "owner_type": "corporate",
+      "last_patch_date": "2024-08-20"
+    },
+    "corroborating_cameras": [],
+    "expected_tier": "medium_trust",
+    "expected_score_range": [50, 79],
+    "notes": "cve(-25) + no_corroboration(-10) = 65 → medium_trust"
+  },
+  {
+    "id": "eval-008",
+    "label": "genuine",
+    "description": "Loitering on worst-possible device — all 5 negative factors, no corroboration",
+    "event": {
+      "camera_id": "EVAL_CAM_009",
+      "event_type": "loitering",
+      "confidence": 0.81,
+      "metadata": {"dwell_seconds": 25.0}
+    },
+    "device_profile": {
+      "auth_required": false,
+      "known_cve_count": 7,
+      "owner_type": "unknown",
+      "last_patch_date": "2017-01-01"
+    },
+    "corroborating_cameras": [],
+    "expected_tier": "low_trust",
+    "expected_score_range": [0, 0],
+    "notes": "All 5 negative factors: 100-30-25-20-15-10 = 0 → score exactly 0, low_trust"
+  }
+]

@@ -1,0 +1,63 @@
+version: "3.9"
+
+# COBRA-WATCH Docker Compose
+# ==========================
+# Brings up: backend (FastAPI) + frontend (nginx) + video-pipeline (PyTorch/YOLOv8)
+#
+# SQLite note: single backend container, single writer — fine for demo/eval scale.
+# SQLite does not handle concurrent writes at production scale — documented in report.
+#
+# Usage:
+#   cp .env.example .env && nano .env   # fill in real API keys
+#   docker-compose up --build
+#
+# The frontend is accessible at http://localhost:5173
+# The backend API is accessible at http://localhost:8000
+# (and proxied through nginx at http://localhost:5173/api)
+
+services:
+
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      # Mount the data directory so the SQLite DB persists across container restarts
+      - ./data:/app/data
+    environment:
+      - DATABASE_PATH=/app/data/surveillancewatch.db
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  frontend:
+    build: ./frontend
+    ports:
+      # Map container's nginx port 80 → host port 5173 so the URL matches the
+      # Vite dev proxy URL (http://localhost:5173) — no frontend config changes needed.
+      - "5173:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  video-pipeline:
+    build: ./video_pipeline
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      - BACKEND_URL=http://backend:8000
+      - YOLO_MODEL=yolov8n.pt
+      - VIDEO_PIPELINE_LOG=INFO
+      # Pass the detection API key so the pipeline can POST events
+      - DETECTION_API_KEY=${DETECTION_API_KEY:-}
+    volumes:
+      # Mount sample footage from the host into the container
+      - ./video_pipeline/sample_footage:/app/sample_footage:ro
+    # Restart on failure (e.g. backend not ready yet) — pipeline health-checks backend itself
+    restart: on-failure
