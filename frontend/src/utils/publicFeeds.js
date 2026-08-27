@@ -16,8 +16,8 @@ export const PUBLIC_FEEDS = [
     lat: 18.9322,
     lon: 72.8236,
     embedType: 'mp4',
-    embedId: 'https://cdn.pixabay.com/video/2019/04/10/22718-330085449_tiny.mp4', // Busy traffic loop
-    sourceUrl: 'https://www.mumbaipolice.gov.in/',
+    embedId: 'https://vjs.zencdn.net/v/oceans.mp4',
+    sourceUrl: 'https://trafficpolicemumbai.maharashtra.gov.in/',
     isPublic: true,
   },
   {
@@ -28,8 +28,8 @@ export const PUBLIC_FEEDS = [
     lat: 19.0388,
     lon: 72.8186,
     embedType: 'mp4',
-    embedId: 'https://cdn.pixabay.com/video/2016/09/21/5361-183786270_tiny.mp4', // Highway traffic
-    sourceUrl: 'https://www.mmrdamumbai.org/',
+    embedId: 'https://vjs.zencdn.net/v/oceans.mp4',
+    sourceUrl: 'https://mmrda.maharashtra.gov.in/',
     isPublic: true,
   },
   // ── DELHI ─────────────────────────────────────────────────────────────────
@@ -41,7 +41,7 @@ export const PUBLIC_FEEDS = [
     lat: 28.6315,
     lon: 77.2167,
     embedType: 'mp4',
-    embedId: 'https://cdn.pixabay.com/video/2020/05/24/40061-424759607_tiny.mp4', // City intersection
+    embedId: 'https://vjs.zencdn.net/v/oceans.mp4',
     sourceUrl: 'https://traffic.delhipolice.gov.in/',
     isPublic: true,
   },
@@ -54,7 +54,7 @@ export const PUBLIC_FEEDS = [
     lat: 12.9758,
     lon: 77.6045,
     embedType: 'mp4',
-    embedId: 'https://cdn.pixabay.com/video/2021/08/11/84687-587879685_tiny.mp4', // Urban traffic
+    embedId: 'https://vjs.zencdn.net/v/oceans.mp4',
     sourceUrl: 'https://btp.gov.in/',
     isPublic: true,
   },

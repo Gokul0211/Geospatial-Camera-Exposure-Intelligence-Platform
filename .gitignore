@@ -2,6 +2,11 @@
 __pycache__/
 *.pyc
 *.pyo
+.pytest_cache/
+*.zip
+*.log
+.coverage
+htmlcov/
 data/*.db
 node_modules/
 dist/
@@ -9,3 +14,4 @@ dist/
 venv/
 *.egg-info/
 .DS_Store
+

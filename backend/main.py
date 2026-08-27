@@ -28,6 +28,10 @@ WebSocket message shape sent to clients (for LiveAlerts.jsx in Phase 4):
 
 from __future__ import annotations
 
+import sys
+import os
+sys.path.insert(0, os.path.dirname(__file__))
+
 import json
 from contextlib import asynccontextmanager
 from typing import Set
@@ -36,10 +40,15 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
 from config import CORS_ORIGINS
+
 from database import init_db
 from routes import devices, news, brief, heatmap, stats
 from routes import alerts as alerts_router
 from routes.alerts import set_connection_manager
+# BTP Module E: audit ledger persistence
+from services.audit_ledger import load_from_db as load_audit_ledger
+# BTP new routers
+from routes import audit_router, decay_router, heartbeat_router, analytics_router
 
 
 # ---------------------------------------------------------------------------
@@ -91,6 +100,8 @@ manager = ConnectionManager()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db()
+    # BTP Module E: reload audit ledger chain from DB so it survives restarts
+    await load_audit_ledger()
     # Inject the manager into alerts.py so it can broadcast without importing app
     set_connection_manager(manager)
     yield
@@ -124,7 +135,12 @@ app.include_router(news.router, prefix="/api")
 app.include_router(brief.router, prefix="/api")
 app.include_router(heatmap.router, prefix="/api")
 app.include_router(stats.router, prefix="/api")
-app.include_router(alerts_router.router, prefix="/api")  # Phase 2
+app.include_router(alerts_router.router, prefix="/api")
+# BTP new routers (Modules A, D, E, G)
+app.include_router(audit_router.router, prefix="/api")
+app.include_router(decay_router.router, prefix="/api")
+app.include_router(heartbeat_router.router, prefix="/api")
+app.include_router(analytics_router.router, prefix="/api")
 
 
 # ---------------------------------------------------------------------------
@@ -162,3 +178,10 @@ async def websocket_alerts(websocket: WebSocket):
         manager.disconnect(websocket)
     except Exception:
         manager.disconnect(websocket)
+
+
+if __name__ == "__main__":
+    import uvicorn
+    print("[main] Starting COBRA-WATCH API server on http://localhost:8000...")
+    uvicorn.run(app, host="0.0.0.0", port=8000)
+

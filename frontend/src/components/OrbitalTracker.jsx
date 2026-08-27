@@ -34,11 +34,21 @@ export default function OrbitalTracker({ city, onOrbitalUpdate, onSelectSatellit
   const lastTrackTs   = useRef(0);    // timestamp of last ground-track redraw
   const intervalRef   = useRef(null);
 
+  const onOrbitalUpdateRef = useRef(onOrbitalUpdate);
+  const onSelectSatelliteRef = useRef(onSelectSatellite);
+
+  useEffect(() => {
+    onOrbitalUpdateRef.current = onOrbitalUpdate;
+    onSelectSatelliteRef.current = onSelectSatellite;
+  }, [onOrbitalUpdate, onSelectSatellite]);
+
   useEffect(() => {
     const cityCenter = CITY_CENTERS[city] || [20, 78];
 
     /* ── helpers ──────────────────────────────────────────────────────── */
-    const removeLayer = l => { try { map.removeLayer(l); } catch (_) {} };
+    const removeLayer = l => {
+      try { map.removeLayer(l); } catch { /* ignore if already removed */ }
+    };
 
     const removeSat = id => {
       if (markersRef.current[id])    { removeLayer(markersRef.current[id]);  delete markersRef.current[id]; }
@@ -116,8 +126,8 @@ export default function OrbitalTracker({ city, onOrbitalUpdate, onSelectSatellit
           m.on('click', () => {
             const currentPos = getSatellitePosition(sat, Date.now());
             const currentDist = haversineKm(cityCenter[0], cityCenter[1], currentPos.lat, currentPos.lon);
-            if (onSelectSatellite) {
-              onSelectSatellite({
+            if (onSelectSatelliteRef.current) {
+              onSelectSatelliteRef.current({
                 ...sat,
                 lat: currentPos.lat,
                 lon: currentPos.lon,
@@ -153,7 +163,7 @@ export default function OrbitalTracker({ city, onOrbitalUpdate, onSelectSatellit
       });
 
       if (redrawTracks) lastTrackTs.current = now;
-      if (onOrbitalUpdate) onOrbitalUpdate(activeAlerts);
+      if (onOrbitalUpdateRef.current) onOrbitalUpdateRef.current(activeAlerts);
     };
 
     cleanAll();

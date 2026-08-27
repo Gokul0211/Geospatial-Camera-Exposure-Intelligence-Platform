@@ -45,7 +45,11 @@ CREATE TABLE IF NOT EXISTS alerts (
     trust_score INTEGER NOT NULL,
     contributing_factors TEXT NOT NULL,
     corroborated_by TEXT,
-    action_tier TEXT NOT NULL
+    action_tier TEXT NOT NULL,
+    probabilistic_score INTEGER,
+    decayed_score INTEGER,
+    max_cvss REAL,
+    feature_embedding TEXT
 )
 """
 

@@ -8,8 +8,8 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SHODAN_API_KEY = os.getenv("SHODAN_API_KEY", "")
 NEWS_API_KEY = os.getenv("NEWS_API_KEY", "")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
-NVD_API_KEY = os.getenv("NVD_API_KEY", "")  # https://nvd.nist.gov/developers/request-an-api-key
-DATABASE_PATH = os.getenv("DATABASE_PATH", os.path.join(BASE_DIR, "data", "surveillancewatch.db"))
+NVD_API_KEY = os.getenv("NVD_API_KEY", "")  # Optional: keyless CISA KEV + CCTV vulnerability catalog used automatically
+DATABASE_PATH = os.getenv("DATABASE_PATH") or os.path.join(BASE_DIR, "data", "surveillancewatch.db")
 CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:5173").split(",")
 
 # API Authentication
@@ -32,6 +32,12 @@ CITIES = {
     "Mumbai":    {"lat": 19.0760, "lon": 72.8777, "zoom": 12},
     "Delhi":     {"lat": 28.6139, "lon": 77.2090, "zoom": 12},
     "Bangalore": {"lat": 12.9716, "lon": 77.5946, "zoom": 12},
+    "Hyderabad": {"lat": 17.3850, "lon": 78.4867, "zoom": 12},
+    "Chennai":   {"lat": 13.0827, "lon": 80.2707, "zoom": 12},
+    "Kolkata":   {"lat": 22.5726, "lon": 88.3639, "zoom": 12},
+    "Pune":      {"lat": 18.5204, "lon": 73.8567, "zoom": 12},
+    "Ahmedabad": {"lat": 23.0225, "lon": 72.5714, "zoom": 12},
+    "All India": {"lat": 20.5937, "lon": 78.9629, "zoom": 5},
 }
 
 SHODAN_QUERIES = [

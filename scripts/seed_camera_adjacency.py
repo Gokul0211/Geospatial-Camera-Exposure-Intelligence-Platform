@@ -86,24 +86,47 @@ async def _insert_adjacency(db: aiosqlite.Connection, cam_a: str, cam_b: str) ->
 
 async def seed_auto_proximity(db: aiosqlite.Connection) -> int:
     """
-    Auto-generate adjacency pairs for all devices in the DB that are within
-    PROXIMITY_THRESHOLD_METRES of each other. Returns number of pairs inserted.
+    Auto-generate adjacency pairs for all devices using Spatial Grid Indexing O(N * K).
+    Buckets devices into 200m lat/lon spatial grid cells and checks only adjacent cells.
+    Scales efficiently to 100,000+ devices.
     """
     async with db.execute(
         "SELECT id, lat, lon FROM devices WHERE lat IS NOT NULL AND lon IS NOT NULL"
     ) as cursor:
         devices = await cursor.fetchall()
 
-    # O(n²) — fine for demo data sizes (< 1000 devices)
+    # ~200m in lat/lon degrees (1 deg lat approx 111km -> 0.002 deg approx 222m)
+    grid_size = 0.002
+    grid: dict[tuple[int, int], list[tuple[str, float, float]]] = {}
+
+    for id_a, lat_a, lon_a in devices:
+        cell_x = int(math.floor(lat_a / grid_size))
+        cell_y = int(math.floor(lon_a / grid_size))
+        grid.setdefault((cell_x, cell_y), []).append((id_a, lat_a, lon_a))
+
     pairs_inserted = 0
-    for i in range(len(devices)):
-        for j in range(i + 1, len(devices)):
-            id_a, lat_a, lon_a = devices[i]
-            id_b, lat_b, lon_b = devices[j]
-            dist = _haversine_metres(lat_a, lon_a, lat_b, lon_b)
-            if dist <= PROXIMITY_THRESHOLD_METRES:
-                await _insert_adjacency(db, id_a, id_b)
-                pairs_inserted += 1
+    seen_pairs: set[tuple[str, str]] = set()
+
+    for (cx, cy), cell_devices in grid.items():
+        # Neighboring cells (3x3 grid neighborhood)
+        neighbor_devices = []
+        for dx in (-1, 0, 1):
+            for dy in (-1, 0, 1):
+                neighbor_devices.extend(grid.get((cx + dx, cy + dy), []))
+
+        for id_a, lat_a, lon_a in cell_devices:
+            for id_b, lat_b, lon_b in neighbor_devices:
+                if id_a >= id_b:
+                    continue
+                pair_key = (id_a, id_b)
+                if pair_key in seen_pairs:
+                    continue
+
+                dist = _haversine_metres(lat_a, lon_a, lat_b, lon_b)
+                if dist <= PROXIMITY_THRESHOLD_METRES:
+                    await _insert_adjacency(db, id_a, id_b)
+                    seen_pairs.add(pair_key)
+                    pairs_inserted += 1
 
     return pairs_inserted
 

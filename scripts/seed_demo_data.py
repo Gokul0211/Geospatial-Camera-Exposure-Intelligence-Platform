@@ -49,6 +49,51 @@ SEED_DATA = {
              "owner_mix": {"government": 2, "telecom": 3, "corporate": 4, "unknown": 1}},
         ]
     },
+    "Hyderabad": {
+        "center": (17.3850, 78.4867),
+        "clusters": [
+            {"area": "HITEC City", "center": (17.4435, 78.3772), "count": 14,
+             "owner_mix": {"government": 4, "telecom": 5, "corporate": 4, "unknown": 1}},
+            {"area": "Banjara Hills", "center": (17.4156, 78.4347), "count": 10,
+             "owner_mix": {"government": 3, "telecom": 3, "corporate": 3, "unknown": 1}},
+        ]
+    },
+    "Chennai": {
+        "center": (13.0827, 80.2707),
+        "clusters": [
+            {"area": "T. Nagar", "center": (13.0418, 80.2341), "count": 12,
+             "owner_mix": {"government": 5, "telecom": 4, "corporate": 2, "unknown": 1}},
+            {"area": "OMR IT Corridor", "center": (12.9226, 80.2312), "count": 10,
+             "owner_mix": {"government": 2, "telecom": 4, "corporate": 3, "unknown": 1}},
+        ]
+    },
+    "Kolkata": {
+        "center": (22.5726, 88.3639),
+        "clusters": [
+            {"area": "Park Street", "center": (22.5532, 88.3524), "count": 12,
+             "owner_mix": {"government": 6, "telecom": 3, "corporate": 2, "unknown": 1}},
+            {"area": "Salt Lake Sector V", "center": (22.5786, 88.4328), "count": 10,
+             "owner_mix": {"government": 3, "telecom": 4, "corporate": 2, "unknown": 1}},
+        ]
+    },
+    "Pune": {
+        "center": (18.5204, 73.8567),
+        "clusters": [
+            {"area": "Hinjawadi IT Park", "center": (18.5912, 73.7389), "count": 12,
+             "owner_mix": {"government": 2, "telecom": 4, "corporate": 5, "unknown": 1}},
+            {"area": "Koregaon Park", "center": (18.5362, 73.8940), "count": 10,
+             "owner_mix": {"government": 4, "telecom": 3, "corporate": 2, "unknown": 1}},
+        ]
+    },
+    "Ahmedabad": {
+        "center": (23.0225, 72.5714),
+        "clusters": [
+            {"area": "GIFT City", "center": (23.1610, 72.6820), "count": 12,
+             "owner_mix": {"government": 6, "telecom": 3, "corporate": 2, "unknown": 1}},
+            {"area": "SG Highway", "center": (23.0384, 72.5119), "count": 10,
+             "owner_mix": {"government": 3, "telecom": 4, "corporate": 2, "unknown": 1}},
+        ]
+    },
 }
 
 MANUFACTURERS = ["Hikvision", "Dahua", "Axis", "Bosch", "Samsung", "Uniview", "Honeywell"]

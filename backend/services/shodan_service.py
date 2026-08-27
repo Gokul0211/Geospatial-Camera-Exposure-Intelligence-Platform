@@ -74,9 +74,13 @@ async def _load_from_cache(city: str) -> list:
     """Load cached devices from SQLite."""
     async with aiosqlite.connect(DATABASE_PATH) as db:
         db.row_factory = aiosqlite.Row
-        async with db.execute(
-            "SELECT * FROM devices WHERE city = ?", (city,)
-        ) as cursor:
+        if city in ["All India", "All", "all"]:
+            query = "SELECT * FROM devices"
+            params = ()
+        else:
+            query = "SELECT * FROM devices WHERE city = ?"
+            params = (city,)
+        async with db.execute(query, params) as cursor:
             rows = await cursor.fetchall()
             return [dict(r) for r in rows]
 
@@ -182,10 +186,13 @@ def _run_shodan_queries(city: str) -> list:
 
 
 async def fetch_and_cache_city(city: str) -> list:
-    """Fetch devices for a city. Returns from cache if fresh."""
-    if await _is_cache_fresh(city):
-        print(f"[cache hit] {city}")
-        return await _load_from_cache(city)
+    """Fetch devices for a city. Returns from cache if available."""
+    cached = await _load_from_cache(city)
+    if cached:
+        return cached
+
+    if not SHODAN_API_KEY:
+        return []
 
     print(f"[shodan fetch] {city}")
     loop = asyncio.get_event_loop()

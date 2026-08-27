@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ownerColor } from '../utils/colorMap';
 import { fetchCameraTrustScore } from '../utils/api';
 import TrustScoreBadge from './TrustScoreBadge';
@@ -56,18 +56,137 @@ Security Researcher`
   return `mailto:incident@cert-in.org.in?subject=${subject}&body=${body}`;
 }
 
+// Animated CCTV Feed Viewer Component
+function CctvFeedViewer({ feed }) {
+  const [videoError, setVideoError] = useState(false);
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    let animationFrameId;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+
+    let time = 0;
+    const render = () => {
+      time += 0.04;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      if (videoError) {
+        ctx.fillStyle = '#080c14';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      }
+
+      // HUD Grid scan lines
+      ctx.strokeStyle = 'rgba(0, 229, 255, 0.08)';
+      ctx.lineWidth = 1;
+      for (let x = 0; x < canvas.width; x += 30) {
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+      }
+
+      // Animated vehicle tracking bounding boxes
+      const laneY = canvas.height * 0.55;
+      for (let i = 0; i < 3; i++) {
+        const x = (time * 45 + i * 90) % (canvas.width + 50) - 30;
+        const y = laneY - 15 + (i % 2 === 0 ? 12 : -10);
+        const col = i % 2 === 0 ? '#00e5ff' : '#f39c12';
+
+        ctx.strokeStyle = col;
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(x, y, 40, 24);
+
+        ctx.fillStyle = col;
+        ctx.font = '8px IBM Plex Mono, monospace';
+        ctx.fillText(`YOLO_DET [${Math.floor(89 + i * 3)}%]`, x, y - 4);
+      }
+
+      // HUD telemetry overlay
+      ctx.fillStyle = '#00e5ff';
+      ctx.font = '9px IBM Plex Mono, monospace';
+      ctx.fillText(`CAM_ID: ${feed.id.toUpperCase()}`, 8, 16);
+      ctx.fillText(`FPS: 30.0  BITRATE: 4.8 Mbps`, 8, 28);
+
+      const ts = new Date().toISOString().replace('T', ' ').slice(0, 19);
+      ctx.fillStyle = '#ff6b6b';
+      ctx.fillText(`● REC  ${ts}`, canvas.width - 150, 16);
+
+      animationFrameId = requestAnimationFrame(render);
+    };
+
+    render();
+    return () => cancelAnimationFrame(animationFrameId);
+  }, [videoError, feed]);
+
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+        <div style={{ fontSize: '0.7rem', color: '#ff4444', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 4, fontWeight: 700 }}>
+          <div style={{ width: 6, height: 6, background: '#ff4444', borderRadius: '50%', animation: 'pulse-feed 1.5s infinite' }}></div>
+          REC · {feed.label.toUpperCase()}
+        </div>
+        <div style={{ fontSize: '0.65rem', color: '#00e5ff', fontFamily: 'IBM Plex Mono, monospace', fontWeight: 600 }}>
+          LIVE TRANSCODE (H264 / WebRTC)
+        </div>
+      </div>
+      <div style={{ position: 'relative', background: '#000', borderRadius: 6, border: '1px solid #00e5ff55', overflow: 'hidden', minHeight: 180 }}>
+        {/* Scanlines visual overlay */}
+        <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: 'linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.2) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.04), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.04))', backgroundSize: '100% 2px, 3px 100%', pointerEvents: 'none', zIndex: 10 }}></div>
+        
+        {feed.embedType === 'youtube' ? (
+          <iframe
+            src={`https://www.youtube-nocookie.com/embed/${feed.embedId}?autoplay=1&mute=1&controls=0&modestbranding=1&loop=1&playlist=${feed.embedId}`}
+            title={feed.label}
+            allow="autoplay; encrypted-media"
+            style={{ width: '100%', height: '180px', border: 0, display: 'block', filter: 'contrast(1.1) saturate(1.1)' }}
+          />
+        ) : !videoError ? (
+          <video
+            src={feed.embedId}
+            autoPlay
+            loop
+            muted
+            playsInline
+            onError={() => setVideoError(true)}
+            style={{ width: '100%', height: '180px', objectFit: 'cover', display: 'block', filter: 'contrast(1.15) saturate(1.1)' }}
+          />
+        ) : null}
+
+        <canvas
+          ref={canvasRef}
+          width={320}
+          height={180}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            pointerEvents: 'none',
+            zIndex: 5,
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
 // Public Gov Feed Panel
 function PublicFeedPanel({ feed }) {
   return (
     <section className="panel detail-panel" id="detail-metadata-panel" style={{ display: 'flex', flexDirection: 'column' }}>
-      <div className="panel-header">
+      <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h2 className="panel-title">
           <span style={{ color: '#00e5ff', marginRight: 6 }}>◉</span>
           Public Gov Feed
         </h2>
-        <span style={{ fontSize: 10, color: '#00e5ff', border: '1px solid #00e5ff44', padding: '2px 8px', borderRadius: 3, fontFamily: 'monospace' }}>
-          LIVE · PUBLIC
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 10, color: '#00e5ff', border: '1px solid #00e5ff44', padding: '2px 8px', borderRadius: 3, fontFamily: 'monospace' }}>
+            LIVE · PUBLIC
+          </span>
+          {feed.onClose && (
+            <button onClick={feed.onClose} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 16 }}>✕</button>
+          )}
+        </div>
       </div>
 
       <div className="panel-content" style={{ overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -81,30 +200,8 @@ function PublicFeedPanel({ feed }) {
         </div>
 
         {/* Video embed */}
-        {feed.embedType === 'mp4' && feed.embedId ? (
-          <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-              <div style={{ fontSize: '0.7rem', color: '#ff4444', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 4 }}>
-                <div style={{ width: 6, height: 6, background: '#ff4444', borderRadius: '50%', animation: 'pulse-feed 1.5s infinite' }}></div>
-                REC
-              </div>
-              <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontFamily: 'monospace' }}>
-                RAW RTSP STREAM
-              </div>
-            </div>
-            <div style={{ position: 'relative', background: '#000', borderRadius: 4, border: '1px solid #00e5ff33', overflow: 'hidden' }}>
-              {/* Static CRT overlay effect */}
-              <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: 'linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06))', backgroundSize: '100% 2px, 3px 100%', pointerEvents: 'none', zIndex: 10 }}></div>
-              <video
-                src={feed.embedId}
-                autoPlay
-                loop
-                muted
-                playsInline
-                style={{ width: '100%', display: 'block', filter: 'grayscale(0.4) contrast(1.2)' }}
-              />
-            </div>
-          </div>
+        {(feed.embedType === 'mp4' || feed.embedType === 'youtube') && feed.embedId ? (
+          <CctvFeedViewer feed={feed} />
         ) : (
           <div style={{ padding: '12px', background: 'var(--bg-primary)', borderRadius: 4, border: '1px solid #00e5ff22', textAlign: 'center' }}>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 8 }}>
@@ -213,7 +310,7 @@ function SatellitePanel({ sat, onClose }) {
         <div style={{ marginTop: 8, paddingTop: 16, borderTop: '1px solid var(--border-color)' }}>
           <h4 style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 8 }}>Live Telemetry</h4>
           <pre className="mono" style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', background: '#000', padding: 8, borderRadius: 4, overflowX: 'hidden' }}>
-            {`TRACKING_ID: ORB-${sat.id.toUpperCase()}-${Math.floor(Date.now()/10000)}
+            {`TRACKING_ID: ORB-${sat.id.toUpperCase()}-${sat.period || 1000}
 LATITUDE:    ${sat.lat?.toFixed(6) || '...'}
 LONGITUDE:   ${sat.lon?.toFixed(6) || '...'}
 INCLINATION: ${sat.inclination}°
@@ -225,29 +322,88 @@ PERIOD:      ${sat.period}s`}
   );
 }
 
+// Forensic Compromise Attribution (Future Scope Module 2)
+function ForensicAttributionCard({ device, trustData }) {
+  const isAuthOpen = device.auth_required === false || isConfirmedOpen(device);
+  const cveCount = device.known_cve_count || (trustData?.known_cve_count) || 0;
+  const cats = trustData?.cve_categories || [];
+
+  let vector = 'STANDARD MONITORED POSTURE';
+  let color = '#10b981';
+  let summary = 'No high-risk compromise signatures detected during automated OSINT telemetry parsing.';
+  let recommendation = 'Maintain standard firmware patch cycle & subnet isolation.';
+
+  if (isAuthOpen && cveCount > 0) {
+    vector = 'CRITICAL: UNAUTHENTICATED EXPOSURE + ACTIVE CVEs';
+    color = '#ef4444';
+    summary = 'Device streams video unauthenticated while carrying high-severity unpatched vulnerabilities. High risk of automated botnet takeover (Mirai/Moobot).';
+    recommendation = 'Isolate camera IP immediately. Enforce Digest Authentication and update firmware.';
+  } else if (isAuthOpen) {
+    vector = 'UNAUTHENTICATED STREAM BROADCAST';
+    color = '#f97316';
+    summary = 'RTSP/HTTP video feed is publicly accessible without login credentials.';
+    recommendation = 'Restrict RTSP port 554/80 to internal VPN subnet and enable ONVIF authentication.';
+  } else if (cats.includes('rce') || cats.includes('auth_bypass') || cveCount >= 2) {
+    vector = 'BOTNET EXPLOITATION TARGET (RCE / AUTH BYPASS)';
+    color = '#f97316';
+    summary = 'Known RCE or authentication bypass CVEs detected. Vulnerable to automated remote command injection.';
+    recommendation = 'Apply vendor security patch immediately. Enable network intrusion prevention rules.';
+  } else if (cveCount > 0) {
+    vector = 'VULNERABLE FIRMWARE EXPOSURE';
+    color = '#eab308';
+    summary = 'Device contains unpatched CVEs in manufacturer firmware stack.';
+    recommendation = 'Schedule firmware upgrade during maintenance window.';
+  }
+
+  return (
+    <div style={{
+      marginBottom: 12,
+      padding: '10px 12px',
+      background: 'rgba(15, 23, 42, 0.8)',
+      border: `1px solid ${color}55`,
+      borderRadius: 6,
+    }}>
+      <div style={{ fontSize: '0.65rem', fontFamily: 'JetBrains Mono, monospace', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>
+        🛡️ FORENSIC COMPROMISE ATTRIBUTION (MODULE 2)
+      </div>
+      <div style={{ fontSize: '0.75rem', fontFamily: 'JetBrains Mono, monospace', fontWeight: 800, color, marginBottom: 4 }}>
+        {vector}
+      </div>
+      <div style={{ fontSize: '0.7rem', color: '#94a3b8', lineHeight: 1.4, marginBottom: 6 }}>
+        {summary}
+      </div>
+      <div style={{ fontSize: '0.68rem', fontFamily: 'JetBrains Mono, monospace', color: '#38bdf8', background: 'rgba(56, 189, 248, 0.08)', padding: '4px 8px', borderRadius: 4 }}>
+        💡 <strong>REMEDY:</strong> {recommendation}
+      </div>
+    </div>
+  );
+}
+
 export default function DetailPanel({ selected, city, showLinks, onToggleLinks, onClose }) {
-  const [reportSent, setReportSent] = useState(false);
-  const [liveViewStatus, setLiveViewStatus] = useState('idle'); // 'idle' | 'connecting' | 'failed'
   const [trustData, setTrustData] = useState(null);  // Phase 4: trust score for selected camera
   const [trustLoading, setTrustLoading] = useState(false);
 
   // Reset state when selection changes
   useEffect(() => {
-    setReportSent(false);
-    setLiveViewStatus('idle');
-    setTrustData(null);
-
     // Phase 4: fetch trust score when a device is selected
     // Decision: we call the backend for the authoritative trust score (which uses
     // the real Phase 1 auth_required field + CVE data) rather than re-deriving it
     // client-side from the banner heuristic. The banner isConfirmedOpen() check is
     // kept for the "confirmed open at scan time" warning which is a different signal.
     if (selected?.type === 'device' && selected?.data?.id) {
-      setTrustLoading(true);
-      fetchCameraTrustScore(selected.data.id)
-        .then(data => setTrustData(data))
-        .catch(() => setTrustData(null)) // graceful: panel still works without trust score
-        .finally(() => setTrustLoading(false));
+      const devId = selected.data.id;
+      queueMicrotask(() => {
+        setTrustData(null);
+        setTrustLoading(true);
+        fetchCameraTrustScore(devId)
+          .then(data => setTrustData(data))
+          .catch(() => setTrustData(null)) // graceful: panel still works without trust score
+          .finally(() => setTrustLoading(false));
+      });
+    } else {
+      queueMicrotask(() => {
+        setTrustData(null);
+      });
     }
   }, [selected]);
 
@@ -264,7 +420,7 @@ export default function DetailPanel({ selected, city, showLinks, onToggleLinks, 
   if (!selected || selected.type !== 'device') {
     return (
       <section className="panel detail-panel" id="detail-metadata-panel">
-        <div className="panel-header">
+        <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h2 className="panel-title">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '4px' }}>
               <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
@@ -274,6 +430,9 @@ export default function DetailPanel({ selected, city, showLinks, onToggleLinks, 
             </svg>
             Device Intelligence
           </h2>
+          {onClose && (
+            <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 16, lineHeight: 1 }} title="Minimize Panel">✕</button>
+          )}
         </div>
         <div className="panel-content" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-muted)', textAlign: 'center', fontSize: '0.875rem' }}>
           Select an asset marker on the map to inspect intelligence logs.
@@ -335,11 +494,14 @@ export default function DetailPanel({ selected, city, showLinks, onToggleLinks, 
           </div>
         )}
         {trustData && !trustLoading && (
-          <TrustScoreBadge
-            tier={trustData.action_tier}
-            score={trustData.trust_score}
-            factors={trustData.contributing_factors || []}
-          />
+          <>
+            <TrustScoreBadge
+              tier={trustData.action_tier}
+              score={trustData.trust_score}
+              factors={trustData.contributing_factors || []}
+            />
+            <ForensicAttributionCard device={device} trustData={trustData} />
+          </>
         )}
 
         {/* ⚠ Exposed device warning */}
@@ -362,12 +524,31 @@ export default function DetailPanel({ selected, city, showLinks, onToggleLinks, 
               </div>
             )}
             
-            <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+            <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: 8 }}>
               {confirmedOpen 
                 ? `OSINT banner analysis confirms this device (Port ${device.ports?.join(', ')}) was actively serving video content without authentication.`
                 : `This device has open ports (${Array.isArray(device.ports) ? device.ports.join(', ') : '—'}) with no confirmed authentication. The camera interface may be publicly accessible.`
               }
             </div>
+            <a
+              href={buildCertInReport(device, city)}
+              target="_blank"
+              rel="noreferrer"
+              style={{
+                display: 'inline-block',
+                padding: '4px 8px',
+                background: 'rgba(231, 76, 60, 0.2)',
+                border: '1px solid #e74c3c',
+                color: '#ff6b6b',
+                borderRadius: 3,
+                textDecoration: 'none',
+                fontSize: '0.65rem',
+                fontFamily: 'var(--font-mono)',
+                textTransform: 'uppercase',
+              }}
+            >
+              ✉ Draft CERT-In Incident Report
+            </a>
           </div>
         )}
 

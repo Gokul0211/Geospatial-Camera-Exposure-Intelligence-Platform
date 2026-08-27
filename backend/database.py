@@ -102,6 +102,11 @@ async def init_db():
         await _add_column_if_missing(db, "devices", "last_patch_date", "TEXT")
         # vuln_last_checked: ISO timestamp of when CVE data was last refreshed
         await _add_column_if_missing(db, "devices", "vuln_last_checked", "TEXT")
+        # Module C (BTP) — CVE category and CVSS severity (Oliver 2025, Famera 2025)
+        # cve_categories: JSON list of category strings, e.g. ["auth_bypass", "rce"]
+        await _add_column_if_missing(db, "devices", "cve_categories", "TEXT")
+        # max_cvss: highest CVSS v3 base score (0.0–10.0) from NVD for this device
+        await _add_column_if_missing(db, "devices", "max_cvss", "REAL")
 
         # ── Phase 1/2: new tables ─────────────────────────────────────────────
         # camera_adjacency: which cameras are physically close enough to corroborate
@@ -129,7 +134,23 @@ async def init_db():
                 trust_score INTEGER NOT NULL,
                 contributing_factors TEXT NOT NULL,
                 corroborated_by TEXT,
-                action_tier TEXT NOT NULL
+                action_tier TEXT NOT NULL,
+                probabilistic_score INTEGER,
+                decayed_score INTEGER,
+                max_cvss REAL,
+                feature_embedding TEXT
+            )
+        """)
+
+        # ── Module E (BTP) — Tamper-Evident Audit Ledger (BIoT SLR 2026) ─────────
+        # Persistent Merkle hash chain: survives server restarts for forensic use.
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS audit_ledger (
+                sequence_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                previous_hash TEXT NOT NULL,
+                hash TEXT NOT NULL UNIQUE,
+                payload TEXT NOT NULL,
+                created_at TEXT NOT NULL
             )
         """)
 
@@ -146,6 +167,11 @@ async def init_db():
 
         # Idempotent migration: add city to alerts for DBs created before Phase 2
         await _add_column_if_missing(db, "alerts", "city", "TEXT")
+        # Idempotent migrations: BTP Module A/B/E/F columns
+        await _add_column_if_missing(db, "alerts", "probabilistic_score", "INTEGER")
+        await _add_column_if_missing(db, "alerts", "decayed_score", "INTEGER")
+        await _add_column_if_missing(db, "alerts", "max_cvss", "REAL")
+        await _add_column_if_missing(db, "alerts", "feature_embedding", "TEXT")
 
         await db.commit()
 

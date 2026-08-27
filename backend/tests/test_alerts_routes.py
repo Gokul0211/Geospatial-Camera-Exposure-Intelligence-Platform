@@ -29,53 +29,12 @@ from unittest.mock import patch
 # Shared DB schema (must match database.py exactly)
 # ---------------------------------------------------------------------------
 
+from database import init_db
+
 async def _init_test_db(db_path: str):
-    """Create tables needed for alerts route integration tests."""
-    async with aiosqlite.connect(db_path) as db:
-        await db.execute("""
-            CREATE TABLE IF NOT EXISTS devices (
-                id TEXT PRIMARY KEY,
-                city TEXT NOT NULL,
-                ip TEXT NOT NULL,
-                lat REAL, lon REAL,
-                device_type TEXT,
-                manufacturer TEXT,
-                ports TEXT,
-                owner_org TEXT,
-                owner_type TEXT,
-                ownership_confidence TEXT,
-                first_seen TEXT, last_seen TEXT,
-                banner_snippet TEXT, raw_data TEXT,
-                fetched_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                firmware_version TEXT,
-                auth_required BOOLEAN,
-                known_cve_count INTEGER DEFAULT 0,
-                cve_ids TEXT,
-                last_patch_date TEXT,
-                vuln_last_checked TEXT
-            )
-        """)
-        await db.execute("""
-            CREATE TABLE IF NOT EXISTS camera_adjacency (
-                camera_id TEXT NOT NULL,
-                nearby_camera_id TEXT NOT NULL,
-                PRIMARY KEY (camera_id, nearby_camera_id)
-            )
-        """)
-        await db.execute("""
-            CREATE TABLE IF NOT EXISTS alerts (
-                id TEXT PRIMARY KEY,
-                camera_id TEXT NOT NULL,
-                city TEXT,
-                event_type TEXT NOT NULL,
-                detected_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                trust_score INTEGER NOT NULL,
-                contributing_factors TEXT NOT NULL,
-                corroborated_by TEXT,
-                action_tier TEXT NOT NULL
-            )
-        """)
-        await db.commit()
+    """Create tables needed for alerts route integration tests using database.init_db()."""
+    with patch("database.DATABASE_PATH", db_path):
+        await init_db()
 
 
 async def _insert_demo_device(db_path: str, device_id: str, city: str = "Mumbai",

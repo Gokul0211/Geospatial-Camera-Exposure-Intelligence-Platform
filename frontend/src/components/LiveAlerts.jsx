@@ -1,36 +1,40 @@
-/**
- * LiveAlerts.jsx — Phase 4 update
- * =================================
- * Consumes the REAL WebSocket message shape from Phase 2 (main.py ConnectionManager).
- * Old fake shape: { type: 'LIVE_ALERT', city, severity, message, timestamp }
- * New real shape: { type: 'ALERT', id, camera_id, city, event_type, trust_score,
- *                   action_tier, contributing_factors, corroborated_by, detected_at }
- *
- * Design preserved: severity-colored toasts, last-3-only, slide-in animation.
- * action_tier replaces severity; event_type replaces message.
- * Auto-reconnects on disconnect (exponential backoff, max 30s).
- */
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
-// Map action_tier → display color (matches existing palette from DetailPanel)
-const TIER_COLORS = {
-  high_trust:   'var(--color-medium, #f39c12)',   // amber — high trust = less urgent visually
-  medium_trust: 'var(--color-high, #e67e22)',     // orange
-  low_trust:    'var(--color-critical, #ff4444)', // red — low trust = highest visual urgency
+const TIER_CONFIG = {
+  high_trust:   { color: '#10b981', bg: 'rgba(16,185,129,0.08)',  border: 'rgba(16,185,129,0.35)', label: 'HIGH TRUST' },
+  medium_trust: { color: '#f59e0b', bg: 'rgba(245,158,11,0.08)',  border: 'rgba(245,158,11,0.35)', label: 'MEDIUM TRUST' },
+  low_trust:    { color: '#ef4444', bg: 'rgba(239,68,68,0.08)',   border: 'rgba(239,68,68,0.4)',   label: 'CRITICAL ALERT' },
 };
 
-const TIER_LABELS = {
-  high_trust:   'HIGH TRUST',
-  medium_trust: 'MED TRUST',
-  low_trust:    'LOW TRUST',
+const EVENT_META = {
+  loitering:           { label: 'Loitering Activity Detected',    icon: '🚶' },
+  perimeter_breach:    { label: 'Perimeter Line Breach',          icon: '🚨' },
+  unauthorized_access: { label: 'Unauthorized Stream Access',     icon: '🔓' },
+  anomalous_motion:    { label: 'Anomalous Motion Detected',      icon: '⚡' },
 };
 
-const EVENT_LABELS = {
-  loitering:            'Loitering Detected',
-  perimeter_breach:     'Perimeter Breach',
-  unauthorized_access:  'Unauthorized Access',
-  anomalous_motion:     'Anomalous Motion',
-};
+const INITIAL_DEMO_ALERTS = [
+  {
+    id: 'demo-alert-001',
+    camera_id: 'mumbai_cam_502',
+    city: 'Mumbai',
+    event_type: 'perimeter_breach',
+    trust_score: 20,
+    action_tier: 'low_trust',
+    contributing_factors: ['auth_required:false', 'known_cve_count:3', 'outdated_firmware'],
+    detected_at: new Date().toISOString(),
+  },
+  {
+    id: 'demo-alert-002',
+    camera_id: 'mumbai_cam_108',
+    city: 'Mumbai',
+    event_type: 'loitering',
+    trust_score: 65,
+    action_tier: 'medium_trust',
+    contributing_factors: ['known_cve_count:1'],
+    detected_at: new Date(Date.now() - 60000).toISOString(),
+  }
+];
 
 function formatTime(isoString) {
   try {
@@ -40,67 +44,114 @@ function formatTime(isoString) {
   }
 }
 
-export default function LiveAlerts() {
-  const [alerts, setAlerts] = useState([]);
-  const [connected, setConnected] = useState(false);
+// Radar sweep icon
+function RadarIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.5" opacity="0.4" />
+      <circle cx="12" cy="12" r="5"  stroke="currentColor" strokeWidth="1.5" opacity="0.6" />
+      <circle cx="12" cy="12" r="1.5" fill="currentColor" />
+      <line x1="12" y1="12" x2="19" y2="5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" opacity="0.8" style={{ animation: 'radar-sweep 3s linear infinite', transformOrigin: '12px 12px' }} />
+    </svg>
+  );
+}
+
+export default function LiveAlerts({ onSelectDevice }) {
+  const [alerts, setAlerts] = useState(INITIAL_DEMO_ALERTS);
+  const [isOpen, setIsOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const wsRef = useRef(null);
   const retryRef = useRef(null);
   const retryDelay = useRef(1000);
+  const isOpenRef = useRef(isOpen);
+
+  useEffect(() => {
+    isOpenRef.current = isOpen;
+  }, [isOpen]);
 
   useEffect(() => {
     function connect() {
-      // Clean up any existing connection
       if (wsRef.current) {
         wsRef.current.onclose = null;
         wsRef.current.close();
       }
-
-      const ws = new WebSocket(`ws://${window.location.host}/api/ws/alerts`);
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsUrl = window.location.port === '5173'
+        ? `${protocol}//127.0.0.1:8000/api/ws/alerts`
+        : `${protocol}//${window.location.host}/api/ws/alerts`;
+      const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
 
-      ws.onopen = () => {
-        setConnected(true);
-        retryDelay.current = 1000; // reset backoff on successful connect
-      };
+      ws.onopen = () => { retryDelay.current = 1000; };
 
       ws.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
-
-          // Phase 4: consume the real ALERT shape from Phase 2
           if (data.type === 'ALERT') {
-            setAlerts(prev => [data, ...prev].slice(0, 5)); // keep last 5
+            setAlerts(prev => [data, ...prev].slice(0, 4));
+            if (!isOpenRef.current) setUnreadCount(prev => prev + 1);
           }
-          // Gracefully ignore any other message types
         } catch (e) {
           console.error('[LiveAlerts] Failed to parse WebSocket message:', e);
         }
       };
 
       ws.onclose = () => {
-        setConnected(false);
-        // Exponential backoff reconnect (max 30s)
         retryRef.current = setTimeout(() => {
           retryDelay.current = Math.min(retryDelay.current * 2, 30000);
           connect();
         }, retryDelay.current);
       };
 
-      ws.onerror = (err) => {
-        console.warn('[LiveAlerts] WebSocket error:', err);
-      };
+      ws.onerror = (err) => { console.warn('[LiveAlerts] WebSocket error:', err); };
     }
 
     connect();
-
     return () => {
       clearTimeout(retryRef.current);
-      if (wsRef.current) {
-        wsRef.current.onclose = null; // prevent reconnect on intentional unmount
-        wsRef.current.close();
-      }
+      if (wsRef.current) { wsRef.current.onclose = null; wsRef.current.close(); }
     };
   }, []);
+
+  const dismissAlert = (id) => setAlerts(prev => prev.filter(a => a.id !== id));
+
+  const triggerDemoAlert = async () => {
+    const eventTypes = ['perimeter_breach', 'loitering', 'unauthorized_access', 'anomalous_motion'];
+    const selectedEvent = eventTypes[Math.floor(Math.random() * eventTypes.length)];
+    const camNum = Math.floor(Math.random() * 800) + 100;
+
+    try {
+      const res = await fetch('http://localhost:8000/api/detection-event', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-API-Key': 'dev-secret-key-12345' },
+        body: JSON.stringify({
+          camera_id: `mumbai_cam_${camNum}`, city: 'Mumbai',
+          event_type: selectedEvent, timestamp: new Date().toISOString(),
+          bounding_box: [120, 140, 220, 310], confidence: 0.96,
+        })
+      });
+      if (!res.ok) throw new Error('API dispatch failed');
+    } catch {
+      const newAlert = {
+        id: `sim-alert-${Date.now()}`,
+        camera_id: `mumbai_cam_${camNum}`, city: 'Mumbai',
+        event_type: selectedEvent,
+        trust_score: Math.floor(Math.random() * 35) + 10,
+        action_tier: 'low_trust',
+        contributing_factors: ['auth_required:false', 'known_cve_count:3', 'outdated_firmware'],
+        detected_at: new Date().toISOString(),
+      };
+      setAlerts(prev => [newAlert, ...prev].slice(0, 4));
+      if (!isOpenRef.current) setUnreadCount(prev => prev + 1);
+    }
+  };
+
+  const toggleOpen = () => {
+    setIsOpen(prev => {
+      if (!prev) setUnreadCount(0);
+      return !prev;
+    });
+  };
 
   if (alerts.length === 0) return null;
 
@@ -108,57 +159,251 @@ export default function LiveAlerts() {
     <div style={{
       position: 'fixed',
       bottom: '20px',
-      right: '20px',
+      left: '20px',
       display: 'flex',
-      flexDirection: 'column',
+      flexDirection: 'column-reverse',
       gap: '10px',
-      zIndex: 9999,
+      zIndex: 9000,
       pointerEvents: 'none',
+      maxWidth: '340px',
     }}>
-      {alerts.map((alert, index) => {
-        const tierColor = TIER_COLORS[alert.action_tier] || 'var(--color-medium)';
-        const tierLabel = TIER_LABELS[alert.action_tier] || alert.action_tier?.toUpperCase() || 'ALERT';
-        const eventLabel = EVENT_LABELS[alert.event_type] || alert.event_type || 'Detection Event';
+      {/* ── Trigger button row ── */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, pointerEvents: 'auto' }}>
+        <button
+          onClick={toggleOpen}
+          style={{
+            background: isOpen
+              ? 'rgba(8, 11, 17, 0.95)'
+              : 'rgba(239, 68, 68, 0.92)',
+            backdropFilter: 'blur(12px)',
+            border: `1px solid ${isOpen ? 'rgba(255,255,255,0.1)' : 'rgba(239,68,68,0.7)'}`,
+            padding: '8px 16px',
+            borderRadius: '22px',
+            color: '#ffffff',
+            fontSize: 11,
+            fontFamily: 'var(--font-mono)',
+            fontWeight: 700,
+            cursor: 'pointer',
+            boxShadow: isOpen
+              ? '0 4px 20px rgba(0,0,0,0.6)'
+              : '0 4px 20px rgba(239,68,68,0.4), 0 0 30px rgba(239,68,68,0.15)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            transition: 'all 0.25s ease',
+            letterSpacing: '0.06em',
+          }}
+        >
+          {isOpen ? (
+            <>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+              MINIMIZE ALERTS
+            </>
+          ) : (
+            <>
+              <span style={{
+                width: 7, height: 7, borderRadius: '50%',
+                background: '#fecaca',
+                boxShadow: '0 0 8px #fecaca',
+                animation: 'pulse-dot 1.2s infinite',
+                display: 'block',
+                flexShrink: 0,
+              }} />
+              <RadarIcon />
+              THREAT ALERTS
+              <span style={{
+                background: 'rgba(255,255,255,0.2)',
+                padding: '1px 7px', borderRadius: 10,
+                fontSize: 10,
+              }}>
+                {unreadCount > 0 ? `${unreadCount} NEW` : alerts.length}
+              </span>
+            </>
+          )}
+        </button>
+
+        {isOpen && (
+          <button
+            onClick={triggerDemoAlert}
+            title="Simulate a real-time detection event"
+            style={{
+              background: 'rgba(59,130,246,0.15)',
+              border: '1px solid rgba(59,130,246,0.4)',
+              color: '#60a5fa',
+              padding: '8px 14px',
+              borderRadius: '22px',
+              fontSize: 10,
+              fontFamily: 'var(--font-mono)',
+              fontWeight: 700,
+              cursor: 'pointer',
+              boxShadow: '0 4px 16px rgba(0,0,0,0.5)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              pointerEvents: 'auto',
+              backdropFilter: 'blur(10px)',
+              letterSpacing: '0.05em',
+              transition: 'all 0.2s ease',
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.background = 'rgba(59,130,246,0.25)';
+              e.currentTarget.style.boxShadow = '0 0 16px rgba(59,130,246,0.3)';
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.background = 'rgba(59,130,246,0.15)';
+              e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.5)';
+            }}
+          >
+            ⚡ SIMULATE
+          </button>
+        )}
+      </div>
+
+      {/* ── Alert Cards ── */}
+      {isOpen && alerts.map((alert, index) => {
+        const cfg     = TIER_CONFIG[alert.action_tier] || TIER_CONFIG.low_trust;
+        const evtMeta = EVENT_META[alert.event_type] || { label: alert.event_type || 'Surveillance Event', icon: '⚠️' };
 
         return (
           <div
             key={alert.id || `${alert.detected_at}-${index}`}
+            className="toast-alert"
             style={{
-              background: 'var(--bg-elevated, #1a1e2e)',
-              borderLeft: `4px solid ${tierColor}`,
-              padding: '12px 16px',
-              borderRadius: '4px',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
-              maxWidth: '300px',
-              animation: 'slideIn 0.3s ease-out forwards',
-              opacity: 1 - (index * 0.15),
+              pointerEvents: 'auto',
+              background: 'rgba(8, 11, 17, 0.97)',
+              backdropFilter: 'blur(16px)',
+              border: `1px solid ${cfg.border}`,
+              borderLeft: `4px solid ${cfg.color}`,
+              padding: '12px 14px',
+              borderRadius: 8,
+              boxShadow: `0 8px 32px rgba(0,0,0,0.7), 0 0 20px ${cfg.color}15`,
+              width: '330px',
+              opacity: 1 - (index * 0.08),
             }}
           >
-            {/* Header row: city + tier badge */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-              <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--text-muted, #667788)' }}>
-                {(alert.city || 'UNKNOWN').toUpperCase()} • {tierLabel}
-              </span>
-              <span style={{
-                width: '8px', height: '8px', borderRadius: '50%',
-                background: tierColor,
-                animation: alert.action_tier === 'low_trust' ? 'pulse 2s infinite' : 'none',
-              }} />
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                <span style={{
+                  width: 6, height: 6, borderRadius: '50%',
+                  background: cfg.color,
+                  boxShadow: `0 0 6px ${cfg.color}`,
+                  animation: alert.action_tier === 'low_trust' ? 'pulse-dot 1s infinite' : 'none',
+                  display: 'block', flexShrink: 0,
+                }} />
+                <span style={{
+                  fontSize: 9,
+                  fontWeight: 800,
+                  color: cfg.color,
+                  fontFamily: 'var(--font-mono)',
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase',
+                }}>
+                  {(alert.city || 'LOCATION').toUpperCase()} · {cfg.label}
+                </span>
+              </div>
+
+              <button
+                onClick={() => dismissAlert(alert.id)}
+                style={{
+                  background: 'none', border: 'none',
+                  color: 'var(--text-muted)',
+                  fontSize: 11, cursor: 'pointer', padding: '2px 4px',
+                  borderRadius: 3, lineHeight: 1,
+                  transition: 'color 0.15s',
+                }}
+                title="Dismiss Alert"
+                onMouseEnter={e => e.currentTarget.style.color = '#f0f4f8'}
+                onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
+              >
+                ✕
+              </button>
             </div>
 
-            {/* Event type */}
-            <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-primary, #e0e6f0)', lineHeight: 1.4 }}>
-              {eventLabel}
-            </p>
+            {/* Event */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+              <span style={{ fontSize: 18, lineHeight: 1 }}>{evtMeta.icon}</span>
+              <span style={{
+                fontSize: 13,
+                fontWeight: 600,
+                color: '#f0f4f8',
+                fontFamily: 'var(--font-sans)',
+                lineHeight: 1.3,
+              }}>
+                {evtMeta.label}
+              </span>
+            </div>
 
-            {/* Trust score + time */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6, alignItems: 'center' }}>
-              <span style={{ fontSize: '0.68rem', fontFamily: 'IBM Plex Mono, monospace', color: tierColor }}>
-                SCORE: {alert.trust_score ?? '—'}
+            {/* Meta row */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              paddingTop: 8,
+              borderTop: '1px solid rgba(255,255,255,0.06)',
+              fontSize: 10,
+              fontFamily: 'var(--font-mono)',
+            }}>
+              <span style={{ color: 'var(--text-secondary)' }}>
+                <span style={{ color: 'var(--text-muted)' }}>SENSOR:</span>&nbsp;
+                <span style={{ color: '#f0f4f8', fontWeight: 700 }}>{alert.camera_id}</span>
               </span>
-              <span style={{ fontSize: '0.65rem', color: 'var(--text-muted, #667788)', fontFamily: 'IBM Plex Mono, monospace' }}>
-                {formatTime(alert.detected_at)}
-              </span>
+              <span style={{ color: 'var(--text-muted)' }}>{formatTime(alert.detected_at)}</span>
+            </div>
+
+            {/* Bottom: Trust + Inspect */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
+              <div style={{ display: 'flex', flex: 1, flexDirection: 'column', gap: 3, marginRight: 10 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: 9, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', letterSpacing: '0.06em' }}>
+                    TRUST SCORE
+                  </span>
+                  <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: cfg.color, fontWeight: 700 }}>
+                    {alert.trust_score ?? '—'}/100
+                  </span>
+                </div>
+                <div style={{ height: 2, background: 'rgba(255,255,255,0.06)', borderRadius: 1, overflow: 'hidden' }}>
+                  <div style={{
+                    height: '100%',
+                    width: `${alert.trust_score || 0}%`,
+                    background: `linear-gradient(90deg, ${cfg.color}80, ${cfg.color})`,
+                    borderRadius: 1,
+                    transition: 'width 0.5s ease',
+                  }} />
+                </div>
+              </div>
+
+              {onSelectDevice && (
+                <button
+                  onClick={() => onSelectDevice({ id: alert.camera_id, city: alert.city, ip: alert.camera_id })}
+                  style={{
+                    background: 'rgba(59,130,246,0.12)',
+                    border: '1px solid rgba(59,130,246,0.3)',
+                    color: '#60a5fa',
+                    borderRadius: 4,
+                    padding: '4px 10px',
+                    fontSize: 9.5,
+                    fontFamily: 'var(--font-mono)',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    letterSpacing: '0.05em',
+                    flexShrink: 0,
+                    transition: 'all 0.15s ease',
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.background = 'rgba(59,130,246,0.22)';
+                    e.currentTarget.style.borderColor = 'rgba(59,130,246,0.6)';
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.background = 'rgba(59,130,246,0.12)';
+                    e.currentTarget.style.borderColor = 'rgba(59,130,246,0.3)';
+                  }}
+                >
+                  INSPECT →
+                </button>
+              )}
             </div>
           </div>
         );

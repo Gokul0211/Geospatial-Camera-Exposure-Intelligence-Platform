@@ -236,8 +236,10 @@ async def _save_articles(articles: list):
 
 
 async def fetch_and_cache_news(city: str) -> list:
-    """Fetch news for a city. For the hackathon demo, we ONLY use anchored articles to prevent API noise."""
-    anchored = [a for a in ANCHORED_ARTICLES if a["city"] == city]
+    if city in ["All India", "All", "all"]:
+        anchored = ANCHORED_ARTICLES
+    else:
+        anchored = [a for a in ANCHORED_ARTICLES if a["city"] == city]
     
     # Save the anchored articles to the DB so they can be queried
     await _save_articles(anchored)

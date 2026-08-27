@@ -37,6 +37,7 @@ That enforcement is in detector.py (_assert_source_is_authorized).
 from __future__ import annotations
 
 import sys
+import os
 import logging
 import time
 from datetime import datetime, timezone
