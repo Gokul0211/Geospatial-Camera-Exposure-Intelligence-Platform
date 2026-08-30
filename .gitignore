@@ -7,7 +7,14 @@ __pycache__/
 *.log
 .coverage
 htmlcov/
+# SQLite database binaries — never commit these; directories are tracked via .gitkeep
 data/*.db
+backend/data/*.db
+backend/*.sqlite
+backend/*.sqlite3
+*.db-journal
+*.db-wal
+*.db-shm
 node_modules/
 dist/
 .venv/
