@@ -164,6 +164,15 @@ class AlertResponse(BaseModel):
     hours_since_scan: float | None = None
     # Module F: Re-ID corroboration method used
     corroboration_method: str | None = None
+    # Module G: Tiered notification routing (Rasal et al. 2025)
+    notification_channel: str | None = None
+    notification_priority: str | None = None
+    operator_verdict: str | None = None
+
+
+class OperatorVerdictRequest(BaseModel):
+    verdict: str = Field(..., description="'verified' | 'false_alarm'")
+    notes: str | None = Field(default=None, description="Optional operator investigation notes")
 
 
 # ---------------------------------------------------------------------------
@@ -192,6 +201,8 @@ async def _save_alert(
     decayed_score: int | None = None,
     max_cvss: float | None = None,
     feature_embedding: list[float] | None = None,
+    notification_channel: str | None = None,
+    notification_priority: str | None = None,
 ) -> None:
     async with aiosqlite.connect(DATABASE_PATH) as db:
         await db.execute(
@@ -199,8 +210,9 @@ async def _save_alert(
             INSERT INTO alerts
               (id, camera_id, city, event_type, detected_at,
                trust_score, contributing_factors, corroborated_by, action_tier,
-               probabilistic_score, decayed_score, max_cvss, feature_embedding)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+               probabilistic_score, decayed_score, max_cvss, feature_embedding,
+               notification_channel, notification_priority)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 alert_id,
@@ -216,6 +228,8 @@ async def _save_alert(
                 decayed_score,
                 max_cvss,
                 json.dumps(feature_embedding) if feature_embedding else None,
+                notification_channel,
+                notification_priority,
             ),
         )
         await db.commit()
@@ -334,11 +348,23 @@ async def receive_detection_event(
     decay_factor: float = decay_info["decay_factor"]
     hours_since_scan: float = decay_info["hours_elapsed"]
 
-    # 6. Persist
+    # 6. Pre-generate ID & timestamps
     alert_id = str(uuid.uuid4())
     detected_at = event.detected_at or datetime.now(timezone.utc).isoformat()
     city = device.get("city", "Unknown")
 
+    # 7. Tiered notification dispatch (Rasal et al. 2025)
+    dispatch_res = await dispatch_alert({
+        "alert_id": alert_id,
+        "camera_id": event.camera_id,
+        "city": city,
+        "event_type": event.event_type,
+        "trust_score": trust_result["score"],
+        "action_tier": trust_result["tier"],
+        "contributing_factors": trust_result["factors"],
+    })
+
+    # 8. Persist to DB
     await _save_alert(
         alert_id=alert_id,
         camera_id=event.camera_id,
@@ -351,9 +377,11 @@ async def receive_detection_event(
         decayed_score=decayed_score,
         max_cvss=max_cvss_val,
         feature_embedding=event.feature_embedding,
+        notification_channel=dispatch_res["channel"],
+        notification_priority=dispatch_res["priority"],
     )
 
-    # 7. Module E — Persistent Merkle audit ledger (BIoT SLR 2026)
+    # 9. Module E — Persistent Merkle audit ledger (BIoT SLR 2026)
     record_audit_event(
         alert_id=alert_id,
         camera_id=event.camera_id,
@@ -365,15 +393,7 @@ async def receive_detection_event(
         max_cvss=max_cvss_val,
     )
 
-    # 8. Tiered dispatch (Rasal 2025)
-    await dispatch_alert({
-        "alert_id": alert_id,
-        "camera_id": event.camera_id,
-        "trust_score": trust_result["score"],
-        "action_tier": trust_result["tier"],
-    })
-
-    # 9. Broadcast over WebSocket
+    # 10. Broadcast over WebSocket
     if _connection_manager is not None:
         ws_payload = {
             "type": "ALERT",
@@ -390,6 +410,8 @@ async def receive_detection_event(
             "decayed_score": decayed_score,
             "decay_factor": decay_factor,
             "corroboration_method": corroboration_method,
+            "notification_channel": dispatch_res["channel"],
+            "notification_priority": dispatch_res["priority"],
         }
         await _connection_manager.broadcast(ws_payload)
 
@@ -409,14 +431,16 @@ async def receive_detection_event(
         decay_factor=decay_factor,
         hours_since_scan=hours_since_scan,
         corroboration_method=corroboration_method,
+        notification_channel=dispatch_res["channel"],
+        notification_priority=dispatch_res["priority"],
     )
 
 
 @router.get("/alerts")
-async def get_alerts(city: str | None = None, limit: int = 20):
+async def get_alerts(city: str | None = None, limit: int = 20, decayed: bool = False):
     """
     Recent alerts, newest first.
-    Now includes probabilistic_score and decayed_score columns.
+    If decayed=True, re-evaluates exponential decay dynamically relative to current server time.
     """
     limit = max(1, min(limit, 200))
 
@@ -452,11 +476,106 @@ async def get_alerts(city: str | None = None, limit: int = 20):
             d["corroborated_by"] = json.loads(d.get("corroborated_by") or "[]")
         except (json.JSONDecodeError, TypeError):
             d["corroborated_by"] = []
-        # Strip feature_embedding from list response (large data, available on individual alert)
+
+        # Strip feature_embedding from list response (large data)
         d.pop("feature_embedding", None)
+
+        if decayed and d.get("detected_at"):
+            decay_calc = apply_trust_decay(
+                base_score=d.get("trust_score", 100),
+                last_scanned_at_iso=d.get("detected_at"),
+                half_life_hours=48.0,
+            )
+            d["live_decayed_score"] = decay_calc["decayed_score"]
+            d["live_decay_factor"] = decay_calc["decay_factor"]
+
         result.append(d)
 
     return {"alerts": result, "count": len(result)}
+
+
+@router.post("/alerts/{alert_id}/verdict")
+async def record_operator_verdict(alert_id: str, body: OperatorVerdictRequest):
+    """
+    Operator Ground-Truth Labelling Endpoint (Luna et al. 2018, ByteTrack 2022).
+    Allows security analysts to submit a ground-truth verdict ('verified' or 'false_alarm').
+    """
+    if body.verdict not in ("verified", "false_alarm"):
+        raise HTTPException(
+            status_code=400,
+            detail="Verdict must be either 'verified' (True Positive) or 'false_alarm' (False Positive).",
+        )
+
+    now_iso = datetime.now(timezone.utc).isoformat()
+
+    async with aiosqlite.connect(DATABASE_PATH) as db:
+        async with db.execute("SELECT id FROM alerts WHERE id = ?", (alert_id,)) as cursor:
+            existing = await cursor.fetchone()
+        if not existing:
+            raise HTTPException(status_code=404, detail=f"Alert '{alert_id}' not found.")
+
+        await db.execute(
+            """
+            UPDATE alerts
+               SET operator_verdict = ?,
+                   verdict_recorded_at = ?
+             WHERE id = ?
+            """,
+            (body.verdict, now_iso, alert_id),
+        )
+        await db.commit()
+
+    return {
+        "alert_id": alert_id,
+        "operator_verdict": body.verdict,
+        "recorded_at": now_iso,
+        "status": "success",
+    }
+
+
+@router.get("/eval/live")
+async def get_live_evaluation_metrics():
+    """
+    Rolling Live Precision/Recall & Tier Efficacy Evaluation (Luna 2018).
+    Computes performance metrics across all operator-labelled alerts in the system.
+    """
+    async with aiosqlite.connect(DATABASE_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute(
+            "SELECT trust_score, action_tier, operator_verdict FROM alerts WHERE operator_verdict IS NOT NULL"
+        ) as cursor:
+            rows = await cursor.fetchall()
+
+    total_labelled = len(rows)
+    if total_labelled == 0:
+        return {
+            "total_labelled": 0,
+            "message": "No operator verdicts recorded yet. Label alerts using the dashboard to view live metrics.",
+            "precision": None,
+            "recall": None,
+            "f1_score": None,
+            "accuracy": None,
+        }
+
+    tp = sum(1 for r in rows if r["operator_verdict"] == "verified" and r["action_tier"] == "high_trust")
+    fp = sum(1 for r in rows if r["operator_verdict"] == "false_alarm" and r["action_tier"] == "high_trust")
+    fn = sum(1 for r in rows if r["operator_verdict"] == "verified" and r["action_tier"] != "high_trust")
+    tn = sum(1 for r in rows if r["operator_verdict"] == "false_alarm" and r["action_tier"] != "high_trust")
+
+    precision = round(tp / (tp + fp), 4) if (tp + fp) > 0 else 0.0
+    recall = round(tp / (tp + fn), 4) if (tp + fn) > 0 else 0.0
+    f1 = round(2 * precision * recall / (precision + recall), 4) if (precision + recall) > 0 else 0.0
+    accuracy = round((tp + tn) / total_labelled, 4) if total_labelled > 0 else 0.0
+
+    return {
+        "total_labelled": total_labelled,
+        "confusion_matrix": {"true_positive": tp, "false_positive": fp, "false_negative": fn, "true_negative": tn},
+        "precision": precision,
+        "recall": recall,
+        "f1_score": f1,
+        "accuracy": accuracy,
+        "high_trust_filter_efficiency": round((tp + tn) / total_labelled, 4),
+    }
 
 
 @router.get("/devices/{camera_id}/trust-score")

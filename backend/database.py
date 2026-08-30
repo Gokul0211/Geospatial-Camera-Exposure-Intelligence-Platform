@@ -172,6 +172,11 @@ async def init_db():
         await _add_column_if_missing(db, "alerts", "decayed_score", "INTEGER")
         await _add_column_if_missing(db, "alerts", "max_cvss", "REAL")
         await _add_column_if_missing(db, "alerts", "feature_embedding", "TEXT")
+        # Ground-truth operator verdict & tiered notification metadata (Rasal 2025, Luna 2018)
+        await _add_column_if_missing(db, "alerts", "operator_verdict", "TEXT")
+        await _add_column_if_missing(db, "alerts", "verdict_recorded_at", "TEXT")
+        await _add_column_if_missing(db, "alerts", "notification_channel", "TEXT")
+        await _add_column_if_missing(db, "alerts", "notification_priority", "TEXT")
 
         await db.commit()
 

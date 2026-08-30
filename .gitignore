@@ -14,4 +14,7 @@ dist/
 venv/
 *.egg-info/
 .DS_Store
-
+desktop.ini
+Thumbs.db
+*.docx
+*.tmp

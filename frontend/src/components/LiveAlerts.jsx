@@ -353,8 +353,102 @@ export default function LiveAlerts({ onSelectDevice }) {
               <span style={{ color: 'var(--text-muted)' }}>{formatTime(alert.detected_at)}</span>
             </div>
 
+            {/* Channel badge & Operator Verdict */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              paddingTop: 6,
+              paddingBottom: 4,
+              fontSize: 9,
+              fontFamily: 'var(--font-mono)',
+            }}>
+              <span style={{
+                color: alert.action_tier === 'high_trust' ? '#ef4444' : alert.action_tier === 'medium_trust' ? '#f59e0b' : '#64748b',
+                background: alert.action_tier === 'high_trust' ? 'rgba(239,68,68,0.1)' : 'rgba(255,255,255,0.04)',
+                border: `1px solid ${alert.action_tier === 'high_trust' ? 'rgba(239,68,68,0.3)' : 'rgba(255,255,255,0.08)'}`,
+                padding: '1px 5px',
+                borderRadius: 3,
+                fontWeight: 700,
+              }}>
+                {alert.action_tier === 'high_trust' ? '🚨 EMERGENCY PUSH' : alert.action_tier === 'medium_trust' ? '⚠️ TRIAGE QUEUE' : '📁 SILENT LOG'}
+              </span>
+
+              {/* Operator Verdict Labelling (Luna 2018) */}
+              <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                {alert.operator_verdict ? (
+                  <span style={{
+                    color: alert.operator_verdict === 'verified' ? '#10b981' : '#ef4444',
+                    fontWeight: 700,
+                    fontSize: 8.5,
+                  }}>
+                    {alert.operator_verdict === 'verified' ? '✓ VERIFIED' : '✗ FALSE ALARM'}
+                  </span>
+                ) : (
+                  <>
+                    <button
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        try {
+                          await fetch(`http://localhost:8000/api/alerts/${alert.id}/verdict`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ verdict: 'verified' }),
+                          });
+                          setAlerts(prev => prev.map(a => a.id === alert.id ? { ...a, operator_verdict: 'verified' } : a));
+                        } catch (err) {
+                          console.error('Failed to submit verdict:', err);
+                        }
+                      }}
+                      title="Mark as Verified True Positive"
+                      style={{
+                        background: 'rgba(16,185,129,0.1)',
+                        border: '1px solid rgba(16,185,129,0.3)',
+                        color: '#10b981',
+                        borderRadius: 3,
+                        padding: '2px 5px',
+                        fontSize: 8.5,
+                        cursor: 'pointer',
+                        fontWeight: 700,
+                      }}
+                    >
+                      👍 TP
+                    </button>
+                    <button
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        try {
+                          await fetch(`http://localhost:8000/api/alerts/${alert.id}/verdict`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ verdict: 'false_alarm' }),
+                          });
+                          setAlerts(prev => prev.map(a => a.id === alert.id ? { ...a, operator_verdict: 'false_alarm' } : a));
+                        } catch (err) {
+                          console.error('Failed to submit verdict:', err);
+                        }
+                      }}
+                      title="Mark as False Positive (False Alarm)"
+                      style={{
+                        background: 'rgba(239,68,68,0.1)',
+                        border: '1px solid rgba(239,68,68,0.3)',
+                        color: '#ef4444',
+                        borderRadius: 3,
+                        padding: '2px 5px',
+                        fontSize: 8.5,
+                        cursor: 'pointer',
+                        fontWeight: 700,
+                      }}
+                    >
+                      👎 FP
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+
             {/* Bottom: Trust + Inspect */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 6 }}>
               <div style={{ display: 'flex', flex: 1, flexDirection: 'column', gap: 3, marginRight: 10 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: 9, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', letterSpacing: '0.06em' }}>

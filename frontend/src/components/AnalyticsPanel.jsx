@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 const API_BASE = 'http://localhost:8000';
 
@@ -38,7 +38,7 @@ function Bar({ value, max, color, label }) {
 // ─── Trust Histogram ─────────────────────────────────────────────────────────
 function TrustHistogram({ data }) {
   if (!data) return <div style={styles.placeholder}>No alert data yet.</div>;
-  const { buckets, tiers, averages, total_alerts } = data;
+  const { buckets, averages, total_alerts } = data;
   const maxBucket = Math.max(...Object.values(buckets || {}), 1);
 
   const barData = [
@@ -208,7 +208,7 @@ function AuditChain({ data, onVerify, verifyResult }) {
 }
 
 // ─── Decay Curve Tab ─────────────────────────────────────────────────────────
-function DecayCurve({ cameraId }) {
+function DecayCurve() {
   const [decayData, setDecayData] = useState(null);
   const [baseScore, setBaseScore] = useState(80);
   const [halfLife, setHalfLife] = useState(48);
@@ -289,12 +289,72 @@ function DecayCurve({ cameraId }) {
   );
 }
 
+// ─── Live Evaluation Tab (Luna 2018, ByteTrack 2022) ─────────────────────────
+function LiveEvalTab({ evalData }) {
+  if (!evalData || evalData.total_labelled === 0) {
+    return (
+      <div style={{ padding: '16px 0', textAlign: 'center', color: '#64748b', fontSize: '11px', fontFamily: 'var(--font-mono)' }}>
+        No operator ground-truth verdicts recorded yet.
+        <div style={{ marginTop: '8px', color: '#94a3b8', fontSize: '10px' }}>
+          Click 👍 TP or 👎 FP on active alerts to build the live evaluation dataset.
+        </div>
+      </div>
+    );
+  }
+
+  const cm = evalData.confusion_matrix || {};
+
+  return (
+    <div>
+      <div style={styles.metaRow}>
+        <span style={styles.metaLabel}>Operator-Labelled Events</span>
+        <span style={{ ...styles.metaBadge, background: '#1e3a5f', color: COLORS.blue }}>{evalData.total_labelled}</span>
+      </div>
+
+      <div style={styles.scoreGrid}>
+        {[
+          { label: 'Precision', val: `${(evalData.precision * 100).toFixed(1)}%`, color: COLORS.high },
+          { label: 'Recall', val: `${(evalData.recall * 100).toFixed(1)}%`, color: COLORS.blue },
+          { label: 'F1-Score', val: `${(evalData.f1_score * 100).toFixed(1)}%`, color: COLORS.purple },
+          { label: 'Accuracy', val: `${(evalData.accuracy * 100).toFixed(1)}%`, color: COLORS.teal },
+        ].map(s => (
+          <div key={s.label} style={styles.scoreCard}>
+            <div style={{ fontSize: '18px', fontWeight: 700, color: s.color, fontFamily: 'var(--font-mono)' }}>
+              {s.val}
+            </div>
+            <div style={{ fontSize: '9px', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{s.label}</div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ marginTop: '12px', padding: '8px', background: 'rgba(15, 23, 42, 0.6)', borderRadius: '6px', border: '1px solid #1e293b' }}>
+        <div style={{ fontSize: '10px', color: '#94a3b8', fontFamily: 'var(--font-mono)', marginBottom: '6px' }}>2×2 CONFUSION MATRIX</div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', fontSize: '9px', fontFamily: 'var(--font-mono)' }}>
+          <div style={{ background: 'rgba(16,185,129,0.08)', padding: '4px 6px', borderRadius: '4px', border: '1px solid rgba(16,185,129,0.2)' }}>
+            <span style={{ color: COLORS.high }}>TP: {cm.true_positive || 0}</span> (High Trust + Verified)
+          </div>
+          <div style={{ background: 'rgba(239,68,68,0.08)', padding: '4px 6px', borderRadius: '4px', border: '1px solid rgba(239,68,68,0.2)' }}>
+            <span style={{ color: COLORS.critical }}>FP: {cm.false_positive || 0}</span> (High Trust + False Alarm)
+          </div>
+          <div style={{ background: 'rgba(245,158,11,0.08)', padding: '4px 6px', borderRadius: '4px', border: '1px solid rgba(245,158,11,0.2)' }}>
+            <span style={{ color: COLORS.medium }}>FN: {cm.false_negative || 0}</span> (Filtered + Genuine)
+          </div>
+          <div style={{ background: 'rgba(59,130,246,0.08)', padding: '4px 6px', borderRadius: '4px', border: '1px solid rgba(59,130,246,0.2)' }}>
+            <span style={{ color: COLORS.blue }}>TN: {cm.true_negative || 0}</span> (Filtered + False Alarm)
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main AnalyticsPanel ──────────────────────────────────────────────────────
 const TABS = [
   { id: 'trust',  label: '📊 Trust',   title: 'Trust Score Distribution' },
   { id: 'threats', label: '📈 Threats', title: 'Alert Frequency Timeline' },
   { id: 'audit',  label: '🔐 Audit',   title: 'Merkle Hash-Chain Ledger' },
   { id: 'decay',  label: '⏳ Decay',   title: 'Trust Score Decay Model' },
+  { id: 'eval',   label: '🎯 Eval',    title: 'Live Ground-Truth Evaluation' },
 ];
 
 export default function AnalyticsPanel({ city, visible, onClose }) {
@@ -302,6 +362,7 @@ export default function AnalyticsPanel({ city, visible, onClose }) {
   const [trustData, setTrustData] = useState(null);
   const [timelineData, setTimelineData] = useState(null);
   const [auditData, setAuditData] = useState(null);
+  const [evalData, setEvalData] = useState(null);
   const [verifyResult, setVerifyResult] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -313,18 +374,40 @@ export default function AnalyticsPanel({ city, visible, onClose }) {
       fetch(`${API_BASE}/api/analytics/trust-distribution?hours=24${cityParam}`).then(r => r.json()),
       fetch(`${API_BASE}/api/analytics/alert-timeline?hours=24${cityParam}`).then(r => r.json()),
       fetch(`${API_BASE}/api/audit/ledger?limit=20`).then(r => r.json()),
-    ]).then(([trust, timeline, audit]) => {
+      fetch(`${API_BASE}/api/eval/live`).then(r => r.json()),
+    ]).then(([trust, timeline, audit, evalD]) => {
       setTrustData(trust);
       setTimelineData(timeline);
       setAuditData(audit);
+      setEvalData(evalD);
     }).catch(() => {}).finally(() => setLoading(false));
   }, [cityParam]);
 
   useEffect(() => {
-    if (visible) fetchAll();
-    const interval = setInterval(() => { if (visible) fetchAll(); }, 15000);
-    return () => clearInterval(interval);
-  }, [visible, fetchAll]);
+    if (!visible) return;
+    let isCancelled = false;
+    Promise.all([
+      fetch(`${API_BASE}/api/analytics/trust-distribution?hours=24${cityParam}`).then(r => r.json()),
+      fetch(`${API_BASE}/api/analytics/alert-timeline?hours=24${cityParam}`).then(r => r.json()),
+      fetch(`${API_BASE}/api/audit/ledger?limit=20`).then(r => r.json()),
+      fetch(`${API_BASE}/api/eval/live`).then(r => r.json()),
+    ]).then(([trust, timeline, audit, evalD]) => {
+      if (!isCancelled) {
+        setTrustData(trust);
+        setTimelineData(timeline);
+        setAuditData(audit);
+        setEvalData(evalD);
+      }
+    }).catch(() => {});
+
+    const interval = setInterval(() => {
+      fetchAll();
+    }, 15000);
+    return () => {
+      isCancelled = true;
+      clearInterval(interval);
+    };
+  }, [visible, cityParam, fetchAll]);
 
   const handleVerify = async () => {
     try {
@@ -377,6 +460,7 @@ export default function AnalyticsPanel({ city, visible, onClose }) {
         {activeTab === 'threats' && <ThreatTimeline data={timelineData} />}
         {activeTab === 'audit'   && <AuditChain data={auditData} onVerify={handleVerify} verifyResult={verifyResult} />}
         {activeTab === 'decay'   && <DecayCurve />}
+        {activeTab === 'eval'    && <LiveEvalTab evalData={evalData} />}
       </div>
 
       {/* Footer citation */}
@@ -386,6 +470,7 @@ export default function AnalyticsPanel({ city, visible, onClose }) {
           {activeTab === 'threats' && 'Rasal et al. (Springer LNNS, 2025) · Luna et al. (Sensors, 2018)'}
           {activeTab === 'audit' && 'BIoT Trust Assessment SLR (MDPI, 2026) · Zhang et al. (2020)'}
           {activeTab === 'decay' && 'Griffioen & Doerr (ACM CCS, 2020): T½ = 48h reinfection half-life'}
+          {activeTab === 'eval' && 'Luna et al. (Sensors, 2018) · ByteTrack (ECCV 2022)'}
         </span>
       </div>
     </div>

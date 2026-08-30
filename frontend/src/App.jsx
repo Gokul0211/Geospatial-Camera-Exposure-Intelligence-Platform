@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import SurveillanceMap from './components/SurveillanceMap';
 import DetailPanel from './components/DetailPanel';
 import RiskBrief from './components/RiskBrief';
@@ -65,7 +65,7 @@ function BootSplash({ onDone }) {
 }
 
 // ── Analytics Icon ────────────────────────────────────────────────────────────
-function AnalyticsIcon({ active }) {
+function AnalyticsIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <line x1="18" y1="20" x2="18" y2="10" />
@@ -121,30 +121,30 @@ export default function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  const toggleLayer = (layer) => setLayers(prev => ({ ...prev, [layer]: !prev[layer] }));
+  const toggleLayer = useCallback((layer) => setLayers(prev => ({ ...prev, [layer]: !prev[layer] })), []);
 
-  const handleSelectDevice = (device) => {
+  const handleSelectDevice = useCallback((device) => {
     setSelected({ type: 'device', data: device });
     setShowLinks(false);
     setShowDevicePanel(true);
     setShowIntelPanel(true);
-  };
+  }, []);
 
-  const handleSelectNews = (article) => {
+  const handleSelectNews = useCallback((article) => {
     setSelected({ type: 'news', data: article });
     setShowIntelPanel(true);
-  };
+  }, []);
 
-  const handleSelectFeed = (feed) => {
+  const handleSelectFeed = useCallback((feed) => {
     setSelected({ type: 'public_feed', data: feed });
     setShowDevicePanel(true);
-  };
+  }, []);
 
-  const handleSelectSatellite = (sat) => {
+  const handleSelectSatellite = useCallback((sat) => {
     setSelected({ type: 'satellite', data: sat });
     setShowLinks(false);
     setShowDevicePanel(true);
-  };
+  }, []);
 
   const gridStyle = {
     display: 'grid',

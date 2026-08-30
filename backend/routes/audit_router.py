@@ -23,6 +23,7 @@ from services.audit_ledger import (
     get_ledger,
     get_ledger_entry_by_alert_id,
     get_ledger_stats,
+    generate_chain_proof,
     verify_ledger_integrity,
     verify_ledger_integrity_report,
 )
@@ -95,3 +96,18 @@ async def get_audit_stats():
         "chain_valid": report["valid"],
         "integrity_message": report["message"],
     }
+
+
+@router.get("/audit/chain-proof")
+async def get_chain_proof(alert_id: str = Query(..., description="Alert ID to generate cryptographic proof for")):
+    """
+    Generate an immutable cryptographic chain proof for an alert (BIoT SLR 2026).
+    """
+    proof = generate_chain_proof(alert_id)
+    if proof is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Alert '{alert_id}' not found in audit ledger chain.",
+        )
+    return proof
+

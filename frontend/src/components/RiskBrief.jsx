@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { fetchNews, streamBrief } from '../utils/api';
 
-export default function RiskBrief({ city, selected, onSelectNews, showNews, onClose }) {
+export default function RiskBrief({ city, selected, onSelectNews, onClose }) {
   const [news, setNews] = useState([]);
   const [briefState, setBriefState] = useState({ text: '', riskLevel: 'PENDING', error: null });
   const [isStreaming, setIsStreaming] = useState(false);

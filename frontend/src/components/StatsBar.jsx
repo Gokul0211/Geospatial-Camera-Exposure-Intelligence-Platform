@@ -42,13 +42,11 @@ function useAnimatedCounter(target, duration = 800) {
 
 export default function StatsBar({ city, orbitalAlerts = [] }) {
   const [stats, setStats] = useState(null);
-  const [prevCity, setPrevCity] = useState(city);
 
   useEffect(() => {
     fetchStats(city)
       .then(setStats)
       .catch(console.error);
-    setPrevCity(city);
   }, [city]);
 
   const legal = getLegalBadge(city);

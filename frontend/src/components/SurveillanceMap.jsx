@@ -285,7 +285,7 @@ function MapLayers({ city, layers, selected, showLinks, activeFilter, searchQuer
         publicFeedLayerRef.current = null;
       }
     };
-  }, [city, map]);
+  }, [city, map, onSelectFeed]);
 
   // Fetch and render heatmap
   useEffect(() => {

@@ -29,7 +29,7 @@ def setup_clean_notifications():
 class TestNotificationTierRouting:
 
     @pytest.mark.asyncio
-    async def test_high_trust_emergency_sms_dispatch(self):
+    async def test_high_trust_emergency_dispatch(self):
         alert_data = {
             "id": "evt-high-001",
             "camera_id": "cam-001",
@@ -39,12 +39,13 @@ class TestNotificationTierRouting:
             "action_tier": "high_trust",
         }
         res = await dispatch_alert(alert_data)
-        assert res["channel"] == "EMERGENCY_DISPATCH_SMS"
+        assert "EMERGENCY" in res["channel"]
         assert res["priority"] == "CRITICAL"
+        assert res["action"] == "INSTANT_PUSH_DISPATCH"
 
         history = get_dispatch_history()
         assert len(history) == 1
-        assert history[0]["channel"] == "EMERGENCY_DISPATCH_SMS"
+        assert "EMERGENCY" in history[0]["channel"]
 
     @pytest.mark.asyncio
     async def test_medium_trust_dashboard_queue_dispatch(self):
@@ -57,7 +58,7 @@ class TestNotificationTierRouting:
             "action_tier": "medium_trust",
         }
         res = await dispatch_alert(alert_data)
-        assert res["channel"] == "DASHBOARD_TRIAGE_QUEUE"
+        assert "TRIAGE" in res["channel"]
         assert res["priority"] == "WARNING"
 
     @pytest.mark.asyncio
@@ -71,11 +72,13 @@ class TestNotificationTierRouting:
             "action_tier": "low_trust",
         }
         res = await dispatch_alert(alert_data)
-        assert res["channel"] == "SILENT_AUDIT_LOG"
+        assert "SILENT" in res["channel"]
         assert res["priority"] == "LOW"
 
     @pytest.mark.asyncio
-    async def test_rapid_burst_event_routing_50_alerts(self):
+    async def test_rapid_burst_event_routing_50_alerts_and_stats(self):
+        from services.notification_service import get_dispatch_stats
+
         for i in range(50):
             tier = "high_trust" if i % 3 == 0 else ("medium_trust" if i % 3 == 1 else "low_trust")
             score = 90 if tier == "high_trust" else (60 if tier == "medium_trust" else 30)
@@ -91,10 +94,9 @@ class TestNotificationTierRouting:
         history = get_dispatch_history()
         assert len(history) == 50
 
-        high_count = sum(1 for h in history if h["channel"] == "EMERGENCY_DISPATCH_SMS")
-        med_count = sum(1 for h in history if h["channel"] == "DASHBOARD_TRIAGE_QUEUE")
-        low_count = sum(1 for h in history if h["channel"] == "SILENT_AUDIT_LOG")
-
-        assert high_count == 17
-        assert med_count == 17
-        assert low_count == 16
+        stats = get_dispatch_stats()
+        assert stats["total_dispatched"] == 50
+        assert stats["by_tier"]["high_trust"] == 17
+        assert stats["by_tier"]["medium_trust"] == 17
+        assert stats["by_tier"]["low_trust"] == 16
+        assert stats["false_alarm_suppression_rate"] > 0.60

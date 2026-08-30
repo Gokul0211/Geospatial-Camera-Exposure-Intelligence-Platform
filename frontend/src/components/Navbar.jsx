@@ -30,13 +30,8 @@ export default function Navbar({
   cities,
   satelliteMode,
   onToggleSatellite,
-  showIntelPanel,
-  onToggleIntelPanel,
-  showDevicePanel,
-  onToggleDevicePanel,
 }) {
   const [timeStr, setTimeStr] = useState('');
-  const [colonVisible, setColonVisible] = useState(true);
 
   useEffect(() => {
     const updateTime = () => {
@@ -45,7 +40,6 @@ export default function Navbar({
       const m = String(now.getMinutes()).padStart(2, '0');
       const s = String(now.getSeconds()).padStart(2, '0');
       setTimeStr(`${h}:${m}:${s}`);
-      setColonVisible(prev => !prev);
     };
     updateTime();
     const interval = setInterval(updateTime, 1000);
