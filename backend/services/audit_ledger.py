@@ -38,6 +38,7 @@ from __future__ import annotations
 import asyncio
 import json
 import hashlib
+import os
 from datetime import datetime, timezone
 
 import aiosqlite
@@ -71,6 +72,11 @@ async def load_from_db() -> None:
     Called from main.py lifespan at startup.
     """
     global _last_hash, _ledger_chain, _loaded
+    # Ensure the DB directory exists — on a fresh clone the data/ dir may not
+    # exist yet because .gitignore excludes *.db but not the directory itself.
+    db_dir = os.path.dirname(DATABASE_PATH)
+    if db_dir:
+        os.makedirs(db_dir, exist_ok=True)
     async with aiosqlite.connect(DATABASE_PATH) as db:
         db.row_factory = aiosqlite.Row
         async with db.execute(
@@ -98,6 +104,12 @@ async def load_from_db() -> None:
 
 async def _persist_entry(entry: dict) -> None:
     """Write a new ledger entry to the `audit_ledger` table."""
+    # Guard: ensure DB directory exists before aiosqlite's background thread
+    # opens it. aiosqlite's thread can fail with OperationalError if the parent
+    # directory is missing, even when sqlite3 itself would succeed.
+    db_dir = os.path.dirname(DATABASE_PATH)
+    if db_dir:
+        os.makedirs(db_dir, exist_ok=True)
     async with aiosqlite.connect(DATABASE_PATH) as db:
         await db.execute(
             """
@@ -113,6 +125,7 @@ async def _persist_entry(entry: dict) -> None:
             ),
         )
         await db.commit()
+
 
 
 # ---------------------------------------------------------------------------
