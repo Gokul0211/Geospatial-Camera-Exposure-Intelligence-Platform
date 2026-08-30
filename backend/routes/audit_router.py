@@ -9,13 +9,18 @@ making every trust decision a queryable, forensically verifiable artifact.
 
 Endpoints
 ---------
-GET /api/audit/ledger          — paginated audit chain (newest first)
-GET /api/audit/verify          — integrity verification report
+GET /api/audit/ledger            — paginated audit chain (newest first)
+GET /api/audit/verify            — integrity verification report
 GET /api/audit/ledger/{alert_id} — lookup entry by alert_id
-GET /api/audit/stats           — chain statistics
+GET /api/audit/stats             — chain statistics
+GET /api/audit/chain-proof       — immutable chain proof for a specific alert
+GET /api/audit/anchor            — current head hash for external anchoring
+GET /api/audit/velocity          — suspicious corroboration velocity alerts
 """
 
 from __future__ import annotations
+
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException, Query
 
@@ -24,9 +29,9 @@ from services.audit_ledger import (
     get_ledger_entry_by_alert_id,
     get_ledger_stats,
     generate_chain_proof,
-    verify_ledger_integrity,
     verify_ledger_integrity_report,
 )
+from services.corroboration_service import get_velocity_alerts
 
 router = APIRouter()
 
@@ -67,23 +72,6 @@ async def verify_audit_integrity():
     return result
 
 
-@router.get("/audit/ledger/{alert_id}")
-async def get_audit_entry_for_alert(alert_id: str):
-    """
-    Lookup the Merkle chain entry for a specific alert_id.
-    Returns the entry with its hash, previous_hash, and full payload.
-    404 if alert_id not found in the chain (was processed before server restart
-    and DB persistence wasn't loaded, or alert doesn't exist).
-    """
-    entry = get_ledger_entry_by_alert_id(alert_id)
-    if entry is None:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Alert '{alert_id}' not found in audit ledger chain.",
-        )
-    return entry
-
-
 @router.get("/audit/stats")
 async def get_audit_stats():
     """
@@ -99,7 +87,9 @@ async def get_audit_stats():
 
 
 @router.get("/audit/chain-proof")
-async def get_chain_proof(alert_id: str = Query(..., description="Alert ID to generate cryptographic proof for")):
+async def get_chain_proof(
+    alert_id: str = Query(..., description="Alert ID to generate cryptographic proof for")
+):
     """
     Generate an immutable cryptographic chain proof for an alert (BIoT SLR 2026).
     """
@@ -111,3 +101,84 @@ async def get_chain_proof(alert_id: str = Query(..., description="Alert ID to ge
         )
     return proof
 
+
+@router.get("/audit/anchor")
+async def get_audit_anchor():
+    """
+    External Anchoring Endpoint — head hash for cross-operator tamper detection.
+
+    Returns the current audit chain head hash with a timestamp. Publishing this
+    value to any external channel (GitHub Gist, public Slack, pastebin, etc.)
+    creates a cross-operator witness: an adversary who rewrites the SQLite DB
+    cannot retroactively change the published hash without detection.
+
+    Security model:
+      - Without external anchoring: tamper-evident against external parties, but
+        NOT against the system operator who controls the DB.
+      - With external anchoring: tamper-evident against ALL parties including
+        the operator, because the pre-rewrite hash is publicly on record.
+
+    Recommended anchoring workflow (no blockchain needed):
+      1. Call GET /api/audit/anchor to get the current head_hash.
+      2. POST it to a public GitHub Gist or append to a public log.
+      3. Any future integrity challenge can compare against the published record.
+
+    This upgrades the ledger from "operator-witnessed" to "externally-anchored"
+    tamper detection, as recommended by Zhang et al. (IoT Botnet Forensics, 2020).
+    """
+    stats = get_ledger_stats()
+    now_iso = datetime.now(timezone.utc).isoformat()
+    return {
+        "head_hash": stats["head_hash"],
+        "chain_length": stats["chain_length"],
+        "anchored_at": now_iso,
+        "anchor_instructions": (
+            "Publish head_hash + anchored_at to any public channel to create "
+            "a cross-operator tamper-evident record. "
+            "Suggested: GitHub Gist, public Slack webhook, or append to a public log."
+        ),
+        "security_model": (
+            "Without publication: tamper-evident against external parties only. "
+            "With publication: tamper-evident against all parties including the operator."
+        ),
+    }
+
+
+@router.get("/audit/velocity")
+async def get_corroboration_velocity():
+    """
+    Corroboration Velocity Alerts — suspicious camera pair detection.
+
+    Returns all camera pairs that have corroborated each other more than
+    VELOCITY_THRESHOLD times in the rolling VELOCITY_WINDOW_MINUTES window.
+
+    This implements the Red Team v2 residual risk mitigation documented in
+    red_team_findings.md (Attack 1: Spoofed Corroboration):
+      - If an attacker seeds fake camera_adjacency rows and spams detection events
+        from those cameras, the pair counter spikes above VELOCITY_THRESHOLD.
+      - Operators can review flagged pairs and inspect their adjacency records.
+
+    An empty list means no suspicious velocity patterns are currently active.
+    """
+    alerts = get_velocity_alerts()
+    return {
+        "velocity_alerts": alerts,
+        "flagged_pairs": len(alerts),
+        "status": "suspicious_activity_detected" if alerts else "clean",
+    }
+
+
+@router.get("/audit/ledger/{alert_id}")
+async def get_audit_entry_for_alert(alert_id: str):
+    """
+    Lookup the Merkle chain entry for a specific alert_id.
+    Returns the entry with its hash, previous_hash, and full payload.
+    404 if alert_id not found in the chain.
+    """
+    entry = get_ledger_entry_by_alert_id(alert_id)
+    if entry is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Alert '{alert_id}' not found in audit ledger chain.",
+        )
+    return entry

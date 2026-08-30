@@ -20,13 +20,26 @@ Module F BTP Extension
   This upgrades corroboration from "same event type nearby" to
   "same-person/same-object confirmed by visual appearance matching",
   directly instantiating Nayak et al.'s Re-ID cross-camera identity.
+
+Corroboration Velocity Tracking (Red Team v2 Item)
+---------------------------------------------------
+Documented in red_team_findings.md (Attack 1 residual risk):
+- If two camera IDs repeatedly corroborate each other within a short window,
+  it is a signal of manufactured corroboration (spoofed adjacency + event spam).
+- `_velocity_tracker` records (cam_a, cam_b) pair timestamps in a rolling window.
+- Pairs exceeding VELOCITY_THRESHOLD events in VELOCITY_WINDOW_MINUTES are flagged.
+- Flag appears in alert response as 'suspicious_corroboration_velocity' factor.
+- Threshold is intentionally permissive (5/60min) to avoid false positives for
+  genuine high-activity camera clusters in busy zones.
 """
 
 from __future__ import annotations
 
 import json
 import math
+from collections import defaultdict
 from datetime import datetime, timedelta, timezone
+from typing import NamedTuple
 
 import aiosqlite
 from config import DATABASE_PATH
@@ -38,6 +51,75 @@ CORROBORATION_WINDOW_MINUTES: int = 15
 # Re-ID similarity threshold (Module F / Nayak 2019)
 # Cosine similarity must be >= this value for embedding-based corroboration.
 REID_SIMILARITY_THRESHOLD: float = 0.80
+
+# ---------------------------------------------------------------------------
+# Corroboration velocity tracker (Red Team v2 / red_team_findings.md)
+# ---------------------------------------------------------------------------
+
+# A pair that corroborates each other more than this many times in the window
+# is flagged as suspicious. 5 per 60 minutes is intentionally permissive.
+VELOCITY_THRESHOLD: int = 5
+VELOCITY_WINDOW_MINUTES: int = 60
+
+# Rolling timestamp log: key = canonical frozenset({cam_a, cam_b}), value = [timestamps]
+_velocity_tracker: dict[frozenset, list[float]] = defaultdict(list)
+
+
+class VelocityFlag(NamedTuple):
+    camera_pair: tuple[str, str]
+    count_in_window: int
+    flagged: bool
+
+
+def _record_corroboration_pair(cam_a: str, cam_b: str) -> VelocityFlag:
+    """
+    Record a corroboration event between two cameras and return a VelocityFlag.
+    Evicts timestamps outside the rolling window before checking the count.
+
+    Returns VelocityFlag(flagged=True) if the pair's count exceeds VELOCITY_THRESHOLD.
+    """
+    import time
+    now = time.monotonic()
+    key: frozenset = frozenset({cam_a, cam_b})
+    window_seconds = VELOCITY_WINDOW_MINUTES * 60.0
+
+    # Evict stale timestamps
+    _velocity_tracker[key] = [
+        t for t in _velocity_tracker[key] if now - t <= window_seconds
+    ]
+    _velocity_tracker[key].append(now)
+    count = len(_velocity_tracker[key])
+    flagged = count > VELOCITY_THRESHOLD
+    return VelocityFlag(camera_pair=(cam_a, cam_b), count_in_window=count, flagged=flagged)
+
+
+def get_velocity_alerts() -> list[dict]:
+    """
+    Return all camera pairs currently flagged for suspicious corroboration velocity.
+    Used by GET /api/audit/velocity (exposed via audit_router.py).
+    """
+    import time
+    now = time.monotonic()
+    window_seconds = VELOCITY_WINDOW_MINUTES * 60.0
+    alerts = []
+    for key, timestamps in _velocity_tracker.items():
+        recent = [t for t in timestamps if now - t <= window_seconds]
+        if len(recent) > VELOCITY_THRESHOLD:
+            pair = tuple(sorted(key))
+            alerts.append({
+                "camera_pair": list(pair),
+                "count_in_window": len(recent),
+                "threshold": VELOCITY_THRESHOLD,
+                "window_minutes": VELOCITY_WINDOW_MINUTES,
+                "flagged": True,
+                "risk": "Potential manufactured corroboration — same pair corroborating repeatedly.",
+            })
+    return alerts
+
+
+def reset_velocity_tracker() -> None:
+    """Reset the velocity tracker — for tests only."""
+    _velocity_tracker.clear()
 
 
 async def get_nearby_cameras(camera_id: str) -> list[str]:
@@ -104,7 +186,13 @@ async def check_corroboration(
         async with db.execute(query, params) as cursor:
             rows = await cursor.fetchall()
 
-    return [row[0] for row in rows]
+    corroborating = [row[0] for row in rows]
+
+    # Velocity tracking: record each corroboration pair for suspicious pattern detection
+    for corr_cam in corroborating:
+        _record_corroboration_pair(camera_id, corr_cam)
+
+    return corroborating
 
 
 async def add_adjacency(camera_id: str, nearby_camera_id: str) -> None:

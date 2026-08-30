@@ -49,7 +49,11 @@ from services.trust_score_service import (
     compute_advanced_trust_score,
     apply_trust_decay,
 )
-from services.corroboration_service import check_corroboration, check_reid_corroboration
+from services.corroboration_service import (
+    check_corroboration,
+    check_reid_corroboration,
+    get_velocity_alerts,
+)
 from services.audit_ledger import record_audit_event
 from services.notification_service import dispatch_alert
 
@@ -69,20 +73,18 @@ def set_connection_manager(manager) -> None:
     _connection_manager = manager
 
 
-# ---------------------------------------------------------------------------
-# API key dependency
-# ---------------------------------------------------------------------------
-
 async def _require_api_key(x_api_key: str | None = Header(default=None)) -> None:
-    if not DETECTION_API_KEY:
+    import config
+    active_key = getattr(config, "DETECTION_API_KEY", "") or globals().get("DETECTION_API_KEY", "")
+    if not active_key:
         return
     import hmac
-    if x_api_key is None or not hmac.compare_digest(x_api_key, DETECTION_API_KEY):
+    if x_api_key is None or not hmac.compare_digest(x_api_key, active_key):
         raise HTTPException(
             status_code=403,
             detail=(
                 "Invalid or missing X-API-Key. "
-                "Set X-API-Key: <your key> header when calling POST /api/detection-event. "
+                "Set X-API-Key: <your key> header when calling POST/write routes. "
                 "GET routes do not require authentication."
             ),
         )
@@ -168,6 +170,8 @@ class AlertResponse(BaseModel):
     notification_channel: str | None = None
     notification_priority: str | None = None
     operator_verdict: str | None = None
+    # Security: velocity flag for suspicious corroboration pairs (red_team_findings.md v2)
+    velocity_suspicious: bool = False
 
 
 class OperatorVerdictRequest(BaseModel):
@@ -394,6 +398,14 @@ async def receive_detection_event(
     )
 
     # 10. Broadcast over WebSocket
+    # Check for suspicious corroboration velocity before broadcasting
+    velocity_alerts = get_velocity_alerts()
+    velocity_suspicious = any(
+        event.camera_id in va["camera_pair"] or
+        any(c in va["camera_pair"] for c in corroborating)
+        for va in velocity_alerts
+    )
+
     if _connection_manager is not None:
         ws_payload = {
             "type": "ALERT",
@@ -412,10 +424,11 @@ async def receive_detection_event(
             "corroboration_method": corroboration_method,
             "notification_channel": dispatch_res["channel"],
             "notification_priority": dispatch_res["priority"],
+            "velocity_suspicious": velocity_suspicious,
         }
         await _connection_manager.broadcast(ws_payload)
 
-    # 10. Return enriched response
+    # 11. Return enriched response
     return AlertResponse(
         alert_id=alert_id,
         camera_id=event.camera_id,
@@ -433,6 +446,7 @@ async def receive_detection_event(
         corroboration_method=corroboration_method,
         notification_channel=dispatch_res["channel"],
         notification_priority=dispatch_res["priority"],
+        velocity_suspicious=velocity_suspicious,
     )
 
 
@@ -495,10 +509,17 @@ async def get_alerts(city: str | None = None, limit: int = 20, decayed: bool = F
 
 
 @router.post("/alerts/{alert_id}/verdict")
-async def record_operator_verdict(alert_id: str, body: OperatorVerdictRequest):
+async def record_operator_verdict(
+    alert_id: str,
+    body: OperatorVerdictRequest,
+    _auth: None = Depends(_require_api_key),
+):
     """
     Operator Ground-Truth Labelling Endpoint (Luna et al. 2018, ByteTrack 2022).
     Allows security analysts to submit a ground-truth verdict ('verified' or 'false_alarm').
+
+    Requires X-API-Key authentication — unprotected verdict labelling would allow
+    adversaries to poison the live precision/recall metrics (GET /api/eval/live).
     """
     if body.verdict not in ("verified", "false_alarm"):
         raise HTTPException(

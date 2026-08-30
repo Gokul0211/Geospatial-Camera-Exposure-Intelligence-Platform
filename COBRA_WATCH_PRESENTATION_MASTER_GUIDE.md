@@ -106,8 +106,8 @@
 |---|---|
 | **"Why not just use YOLOv8 alone?"** | "YOLO detects *what* is in the video, but can't tell if the camera is hacked. Our Trust Score checks camera security first." |
 | **"How do you check if cameras corroborate?"** | "If Camera A alerts, we check if adjacent cameras within 500 meters also saw something within 15 minutes. If yes, +20 bonus!" |
-| **"Is this legal under Indian privacy laws?"** | "Yes! We only use public camera metadata via Shodan OSINT, run Video AI on authorized local footage, and log everything in a tamper-proof ledger." |
-| **"Is the system tested?"** | "Yes, we ran a master suite of **309 automated tests** covering APIs, security, tracking, and breach rules with a **100% pass rate**." |
+| **"Is this legal under Indian privacy laws?"** | "Yes! We only use public camera metadata via Shodan OSINT, run Video AI on authorized non-live recorded footage, and log everything in a tamper-evident audit ledger with external anchoring." |
+| **"Is the system tested?"** | "Yes, we ran a comprehensive suite of **326 automated tests** covering APIs, security, tracking, and breach rules with a **100% pass rate**." |
 
 ---
 
@@ -117,4 +117,4 @@
 |---|---|
 | `python backend/main.py` | Launches Backend API Server (`http://localhost:8000`) |
 | `cd frontend` then `npm run dev` | Launches GIS Map Dashboard (`http://localhost:5173`) |
-| `pytest backend/tests video_pipeline/tests eval/test_eval_harness.py -v` | Demonstrates all 309 tests passing ($100\%$ pass rate) |
+| `pytest` | Demonstrates all 326 tests passing ($100\%$ pass rate) |

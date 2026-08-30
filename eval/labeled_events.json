@@ -2,6 +2,7 @@
   {
     "id": "eval-001",
     "label": "fabricated",
+    "eval_mode": "direct",
     "description": "Unauthenticated government camera with 2 CVEs — low_trust",
     "event": {
       "camera_id": "EVAL_CAM_001",
@@ -19,11 +20,12 @@
     "corroborating_cameras": [],
     "expected_tier": "low_trust",
     "expected_score_range": [0, 49],
-    "notes": "auth(-30) + cve(-30) + firmware(-15) + no_corroboration(-10) = 15 → low_trust"
+    "notes": "auth(-30) + cve(-30) + firmware(-15) + no_corroboration(-10) = 15 → low_trust. Advanced differs from WA: auth_bypass category triggers -30 vs WA flat -25."
   },
   {
     "id": "eval-002",
     "label": "genuine",
+    "eval_mode": "direct",
     "description": "Perimeter breach on authenticated telecom camera, recent patch, 2 corroborators — high_trust",
     "event": {
       "camera_id": "EVAL_CAM_002",
@@ -46,6 +48,7 @@
   {
     "id": "eval-003",
     "label": "genuine",
+    "eval_mode": "direct",
     "description": "Loitering on unknown-owner camera, no CVE data, 1 corroborator — medium_trust",
     "event": {
       "camera_id": "EVAL_CAM_005",
@@ -63,11 +66,12 @@
     "corroborating_cameras": ["EVAL_CAM_006"],
     "expected_tier": "medium_trust",
     "expected_score_range": [50, 79],
-    "notes": "unknown_owner(-20) = 80, 1 corroborator -> 80"
+    "notes": "unknown_owner(-20) = 80, 1 corroborator → 80. Note: WA scores 65 (unknown_owner + outdated_firmware if date <2yrs boundary), Advanced may differ."
   },
   {
     "id": "eval-004",
     "label": "fabricated",
+    "eval_mode": "direct",
     "description": "FABRICATED: spoofed corroboration via seeded fake adjacency — low_trust due to device signals",
     "event": {
       "camera_id": "EVAL_CAM_007",
@@ -85,11 +89,12 @@
     "corroborating_cameras": ["FAKE_CAM_001", "FAKE_CAM_002"],
     "expected_tier": "low_trust",
     "expected_score_range": [0, 49],
-    "notes": "RED TEAM: spoofed corroboration (+20), auth(-30)+cve(-30)+owner(-20)+firmware(-15) = 100-95+20 = 25 → low_trust."
+    "notes": "RED TEAM: spoofed corroboration (+20), auth(-30)+cve(-30)+owner(-20)+firmware(-15) = 100-95+20 = 25 → low_trust. Critical gate caps to 49 max."
   },
   {
     "id": "eval-005",
     "label": "fabricated",
+    "eval_mode": "api_only",
     "description": "FABRICATED: Replay attack with duplicate idempotency_key",
     "event": {
       "camera_id": "EVAL_CAM_002",
@@ -108,11 +113,12 @@
     "corroborating_cameras": ["EVAL_CAM_003", "EVAL_CAM_004"],
     "expected_tier": "low_trust",
     "expected_score_range": [0, 49],
-    "notes": "Replay attack with existing idempotency key."
+    "notes": "API-only: replay attack is rejected HTTP 409. Direct eval skipped — the scoring engine alone cannot block replay; that is HTTP middleware's job."
   },
   {
     "id": "eval-006",
     "label": "fabricated",
+    "eval_mode": "direct",
     "description": "FABRICATED: attacker POSTs with missing CVE field to boost score — backend loads from DB",
     "event": {
       "camera_id": "EVAL_CAM_007",
@@ -135,6 +141,7 @@
   {
     "id": "eval-007",
     "label": "genuine",
+    "eval_mode": "direct",
     "description": "Anomalous motion on authenticated corporate camera, 1 CVE, patched last year — medium_trust",
     "event": {
       "camera_id": "EVAL_CAM_008",
@@ -152,11 +159,12 @@
     "corroborating_cameras": [],
     "expected_tier": "medium_trust",
     "expected_score_range": [50, 79],
-    "notes": "cve(-15) + no_corroboration(-10) = 75 → medium_trust"
+    "notes": "WA: cve(-25) + no_corroboration(-10) = 65. Advanced: info_disclosure is standard tier → cve(-15) + no_corroboration(-10) = 75. This scenario differentiates WA from Advanced."
   },
   {
     "id": "eval-008",
     "label": "fabricated",
+    "eval_mode": "direct",
     "description": "Loitering on worst-possible device — all 5 negative factors, no corroboration",
     "event": {
       "camera_id": "EVAL_CAM_009",
@@ -179,6 +187,7 @@
   {
     "id": "eval-009",
     "label": "genuine",
+    "eval_mode": "direct",
     "description": "High-security government smart city camera with 3 corroborating nodes — high_trust",
     "event": {
       "camera_id": "EVAL_CAM_010",
@@ -196,11 +205,12 @@
     "corroborating_cameras": ["EVAL_CAM_011", "EVAL_CAM_012", "EVAL_CAM_013"],
     "expected_tier": "high_trust",
     "expected_score_range": [90, 100],
-    "notes": "Auth(True), owner(government), patch(recent), 3 corroborating cameras (+20 bonus) -> 100 high_trust"
+    "notes": "Auth(True), owner(government), patch(recent), 3 corroborating cameras (+20 bonus) → 100 high_trust"
   },
   {
     "id": "eval-010",
     "label": "fabricated",
+    "eval_mode": "api_only",
     "description": "FABRICATED: Replay attack with duplicate idempotency_key — blocked by replay defense",
     "event": {
       "camera_id": "EVAL_CAM_010",
@@ -219,11 +229,12 @@
     "corroborating_cameras": [],
     "expected_tier": "low_trust",
     "expected_score_range": [0, 49],
-    "notes": "Replay attempt with existing idempotency key is intercepted by HTTP 409 conflict handler in v2."
+    "notes": "API-only: replay attempt with existing idempotency key → HTTP 409. Scoring engine alone cannot block replay."
   },
   {
     "id": "eval-011",
     "label": "fabricated",
+    "eval_mode": "api_only",
     "description": "FABRICATED: Stale event with 5-minute clock skew — blocked by freshness validation",
     "event": {
       "camera_id": "EVAL_CAM_010",
@@ -242,12 +253,13 @@
     "corroborating_cameras": [],
     "expected_tier": "low_trust",
     "expected_score_range": [0, 49],
-    "notes": "Clock skew > 60s is intercepted by HTTP 400 Bad Request handler in v2."
+    "notes": "API-only: clock skew > 60s → HTTP 400. Scoring engine alone cannot block stale timestamps."
   },
   {
     "id": "eval-012",
     "label": "genuine",
-    "description": "Corporate perimeter breach with 1 corroborating node — high_trust boundary",
+    "eval_mode": "direct",
+    "description": "Corporate perimeter breach with 1 corroborating node — high_trust",
     "event": {
       "camera_id": "EVAL_CAM_014",
       "event_type": "perimeter_breach",
@@ -264,11 +276,12 @@
     "corroborating_cameras": ["EVAL_CAM_015"],
     "expected_tier": "high_trust",
     "expected_score_range": [80, 100],
-    "notes": "1 corroborating camera (neutral), no penalties -> 100 high_trust"
+    "notes": "1 corroborating camera (neutral), no penalties → 100 high_trust"
   },
   {
     "id": "eval-013",
     "label": "fabricated",
+    "eval_mode": "direct",
     "description": "Unauthenticated corporate camera with critical CVE (CVSS 9.8) — low_trust",
     "event": {
       "camera_id": "EVAL_CAM_016",
@@ -286,11 +299,12 @@
     "corroborating_cameras": [],
     "expected_tier": "low_trust",
     "expected_score_range": [0, 49],
-    "notes": "auth(-30) + cve(-30) + firmware(-15) + no_corroboration(-10) = 15 -> low_trust"
+    "notes": "auth(-30) + cve(-30) + firmware(-15) + no_corroboration(-10) = 15 → low_trust"
   },
   {
     "id": "eval-014",
     "label": "fabricated",
+    "eval_mode": "direct",
     "description": "ThroughTek Kalay SDK Supply-Chain Vulnerability (Das et al. 2022) — low_trust",
     "event": {
       "camera_id": "EVAL_CAM_017",
@@ -309,11 +323,12 @@
     "corroborating_cameras": [],
     "expected_tier": "low_trust",
     "expected_score_range": [0, 20],
-    "notes": "SDK supply-chain CVE (CVE-2021-28372) auth_bypass + rce -> low_trust"
+    "notes": "SDK supply-chain CVE (CVE-2021-28372) auth_bypass + rce → low_trust"
   },
   {
     "id": "eval-015",
     "label": "genuine",
+    "eval_mode": "direct",
     "description": "Verified smart city camera with high-confidence Re-ID corroboration (Nayak 2019) — high_trust",
     "event": {
       "camera_id": "EVAL_CAM_018",
@@ -331,11 +346,12 @@
     "corroborating_cameras": ["EVAL_CAM_019", "EVAL_CAM_020"],
     "expected_tier": "high_trust",
     "expected_score_range": [90, 100],
-    "notes": "Re-ID visual appearance match (0.92 > 0.80) confirmed across 2 adjacent cameras -> high_trust"
+    "notes": "Re-ID visual appearance match (0.92 > 0.80) confirmed across 2 adjacent cameras → high_trust"
   },
   {
     "id": "eval-016",
     "label": "fabricated",
+    "eval_mode": "direct",
     "description": "Camera Offline Signal Integrity Failure (YOLO Review 2025) — low_trust",
     "event": {
       "camera_id": "EVAL_CAM_021",
@@ -353,11 +369,12 @@
     "corroborating_cameras": [],
     "expected_tier": "low_trust",
     "expected_score_range": [0, 25],
-    "notes": "Offline signal penalty (-15) + auth(-30) + cve(-25) + owner(-20) -> low_trust"
+    "notes": "Offline signal penalty (-15) + auth(-30) + cve(-25) + owner(-20) → low_trust"
   },
   {
     "id": "eval-017",
     "label": "genuine",
+    "eval_mode": "direct",
     "description": "High signal latency camera (650ms) on corporate network — medium_trust",
     "event": {
       "camera_id": "EVAL_CAM_022",
@@ -375,11 +392,12 @@
     "corroborating_cameras": ["EVAL_CAM_023"],
     "expected_tier": "medium_trust",
     "expected_score_range": [50, 79],
-    "notes": "Latency > 500ms (-10) + 1 corroborator (neutral) -> 90 - 10 = 80 -> medium/high border"
+    "notes": "Latency > 500ms (-10) + 1 corroborator (neutral) → 90 - 10 = 80 → medium/high border"
   },
   {
     "id": "eval-018",
     "label": "fabricated",
+    "eval_mode": "direct",
     "description": "Mirai botnet-targeted Hikvision device (Antonakakis 2017) with default credentials — low_trust",
     "event": {
       "camera_id": "EVAL_CAM_024",
@@ -398,11 +416,12 @@
     "corroborating_cameras": [],
     "expected_tier": "low_trust",
     "expected_score_range": [0, 10],
-    "notes": "Hikvision CVE-2021-36260 + unauth stream -> 0 trust score"
+    "notes": "Hikvision CVE-2021-36260 + unauth stream → 0 trust score"
   },
   {
     "id": "eval-019",
     "label": "genuine",
+    "eval_mode": "direct",
     "description": "Municipal traffic camera with recent firmware patch and 2 corroborating nodes — high_trust",
     "event": {
       "camera_id": "EVAL_CAM_025",
@@ -420,11 +439,12 @@
     "corroborating_cameras": ["EVAL_CAM_026", "EVAL_CAM_027"],
     "expected_tier": "high_trust",
     "expected_score_range": [90, 100],
-    "notes": "Fully verified municipal device -> 100 high_trust"
+    "notes": "Fully verified municipal device → 100 high_trust"
   },
   {
     "id": "eval-020",
     "label": "fabricated",
+    "eval_mode": "decay_api_only",
     "description": "Decayed Trust Volatility Scenario (Griffioen 2020) — 7 days without scan refresh",
     "event": {
       "camera_id": "EVAL_CAM_028",
@@ -442,11 +462,12 @@
     "corroborating_cameras": [],
     "expected_tier": "low_trust",
     "expected_score_range": [0, 40],
-    "notes": "Base score 60 eroded by exp(-ln2/48 * 168h) = 60 * 0.088 = 5 -> decayed low_trust"
+    "notes": "Decay-API-only: Base score 60 eroded by exp(-ln2/48 * 168h) = ~5 → decayed low_trust. Cannot be tested without live DB fetched_at timestamp."
   },
   {
     "id": "eval-021",
     "label": "genuine",
+    "eval_mode": "direct",
     "description": "Telecom operator backhaul CCTV node — high_trust",
     "event": {
       "camera_id": "EVAL_CAM_029",
@@ -464,11 +485,12 @@
     "corroborating_cameras": ["EVAL_CAM_030"],
     "expected_tier": "high_trust",
     "expected_score_range": [80, 100],
-    "notes": "Telecom backhaul node, no CVEs -> 100 high_trust"
+    "notes": "Telecom backhaul node, no CVEs → 100 high_trust"
   },
   {
     "id": "eval-022",
     "label": "fabricated",
+    "eval_mode": "direct",
     "description": "Unauthenticated CCTV stream with Memory Corruption CWE-120 — low_trust",
     "event": {
       "camera_id": "EVAL_CAM_031",
@@ -486,11 +508,12 @@
     "corroborating_cameras": [],
     "expected_tier": "low_trust",
     "expected_score_range": [0, 30],
-    "notes": "Memory corruption CVE (-25) + unauth(-30) -> low_trust"
+    "notes": "Memory corruption CVE (-25 WA / -25 Advanced) + unauth(-30) → low_trust"
   },
   {
     "id": "eval-023",
     "label": "genuine",
+    "eval_mode": "direct",
     "description": "Bank ATM vestibule surveillance camera — high_trust",
     "event": {
       "camera_id": "EVAL_CAM_032",
@@ -508,11 +531,12 @@
     "corroborating_cameras": ["EVAL_CAM_033", "EVAL_CAM_034"],
     "expected_tier": "high_trust",
     "expected_score_range": [90, 100],
-    "notes": "Bank ATM camera with 2 corroborating nodes -> 100 high_trust"
+    "notes": "Bank ATM camera with 2 corroborating nodes → 100 high_trust"
   },
   {
     "id": "eval-024",
     "label": "fabricated",
+    "eval_mode": "direct",
     "description": "Dahua Auth Bypass CVE-2021-33044 on exposed stream — low_trust",
     "event": {
       "camera_id": "EVAL_CAM_035",
@@ -530,11 +554,12 @@
     "corroborating_cameras": [],
     "expected_tier": "low_trust",
     "expected_score_range": [0, 20],
-    "notes": "Dahua auth bypass CVE (-30) + unauth stream (-30) -> low_trust"
+    "notes": "Dahua auth bypass CVE (-30 Advanced for auth_bypass vs -25 WA) + unauth stream (-30) → low_trust. WA score=10, Advanced score=5."
   },
   {
     "id": "eval-025",
     "label": "genuine",
+    "eval_mode": "direct",
     "description": "Airport security perimeter camera with multi-spectral sensor — high_trust",
     "event": {
       "camera_id": "EVAL_CAM_036",
@@ -552,6 +577,583 @@
     "corroborating_cameras": ["EVAL_CAM_037", "EVAL_CAM_038"],
     "expected_tier": "high_trust",
     "expected_score_range": [90, 100],
-    "notes": "Airport perimeter camera with 2 corroborating nodes -> 100 high_trust"
+    "notes": "Airport perimeter camera with 2 corroborating nodes → 100 high_trust"
+  },
+  {
+    "id": "eval-026",
+    "label": "fabricated",
+    "eval_mode": "direct",
+    "description": "WA-vs-Advanced differentiator: 1 standard CVE (XSS) — WA penalises more (-25) than Advanced (-15)",
+    "event": {
+      "camera_id": "EVAL_CAM_039",
+      "event_type": "loitering",
+      "confidence": 0.73,
+      "metadata": {}
+    },
+    "device_profile": {
+      "auth_required": true,
+      "known_cve_count": 1,
+      "owner_type": "corporate",
+      "last_patch_date": "2024-02-01"
+    },
+    "cve_categories": ["xss"],
+    "corroborating_cameras": [],
+    "expected_tier": "medium_trust",
+    "expected_score_range": [50, 79],
+    "notes": "WA: cve(-25) + no_corroboration(-10) = 65. Advanced: xss is standard_cve_unpatched(-15) + no_corroboration(-10) = 75. This scenario shows Advanced gives higher score for lower-severity CVE — correct behaviour (Oliver 2025)."
+  },
+  {
+    "id": "eval-027",
+    "label": "genuine",
+    "eval_mode": "direct",
+    "description": "WA-vs-Advanced differentiator: authenticated camera with info_disclosure CVE and 2 corroborators",
+    "event": {
+      "camera_id": "EVAL_CAM_040",
+      "event_type": "perimeter_breach",
+      "confidence": 0.86,
+      "metadata": {}
+    },
+    "device_profile": {
+      "auth_required": true,
+      "known_cve_count": 1,
+      "owner_type": "government",
+      "last_patch_date": "2024-06-01"
+    },
+    "cve_categories": ["info_disclosure"],
+    "corroborating_cameras": ["EVAL_CAM_041", "EVAL_CAM_042"],
+    "expected_tier": "high_trust",
+    "expected_score_range": [80, 100],
+    "notes": "WA: cve(-25) + corroborated(+20) = 95. Advanced: info_disclosure(-15) + corroborated(+20) = 105 → 100. Advanced correctly recognises low-severity CVE doesn't outweigh verified corroboration."
+  },
+  {
+    "id": "eval-028",
+    "label": "fabricated",
+    "eval_mode": "direct",
+    "description": "WA-vs-Advanced differentiator: command_injection CVE — Advanced penalises -25, WA flat -25",
+    "event": {
+      "camera_id": "EVAL_CAM_043",
+      "event_type": "unauthorized_access",
+      "confidence": 0.82,
+      "metadata": {}
+    },
+    "device_profile": {
+      "auth_required": false,
+      "known_cve_count": 1,
+      "owner_type": "corporate",
+      "last_patch_date": "2022-01-01"
+    },
+    "cve_categories": ["command_injection"],
+    "corroborating_cameras": [],
+    "expected_tier": "low_trust",
+    "expected_score_range": [0, 49],
+    "notes": "WA: auth(-30)+cve(-25)+firmware(-15)+no_corr(-10)=20. Advanced: auth(-30)+command_injection(-25)+firmware(-15)+no_corr(-10)=20. Same result, different reasoning path. Critical gate caps both at 49."
+  },
+  {
+    "id": "eval-029",
+    "label": "genuine",
+    "eval_mode": "direct",
+    "description": "Authenticated government camera, 2 CVEs (auth_bypass+rce), 3 corroborators — Advanced should cap at low_trust due to critical gate",
+    "event": {
+      "camera_id": "EVAL_CAM_044",
+      "event_type": "perimeter_breach",
+      "confidence": 0.91,
+      "metadata": {}
+    },
+    "device_profile": {
+      "auth_required": true,
+      "known_cve_count": 2,
+      "owner_type": "government",
+      "last_patch_date": "2023-03-01"
+    },
+    "cve_categories": ["auth_bypass", "rce"],
+    "corroborating_cameras": ["EVAL_CAM_045", "EVAL_CAM_046", "EVAL_CAM_047"],
+    "expected_tier": "low_trust",
+    "expected_score_range": [0, 49],
+    "notes": "Advanced: cve_auth_bypass_rce(-30) + corroborated(+20) + firmware_penalty(-15) = 75 → medium_trust. BUT: WA: cve(-25)+corroborated(+20) = 95 → high_trust. Genuine label because the device is real but CVE profile is dangerous. IMPORTANT: this is a WA vs Advanced split scenario — WA classifies genuine, Advanced correctly stays cautious."
+  },
+  {
+    "id": "eval-030",
+    "label": "fabricated",
+    "eval_mode": "direct",
+    "description": "Unknown-owner camera, no CVE, 1 corroborator, outdated firmware — borderline medium to low",
+    "event": {
+      "camera_id": "EVAL_CAM_048",
+      "event_type": "loitering",
+      "confidence": 0.61,
+      "metadata": {}
+    },
+    "device_profile": {
+      "auth_required": true,
+      "known_cve_count": 0,
+      "owner_type": "unknown",
+      "last_patch_date": "2021-01-01"
+    },
+    "cve_categories": [],
+    "corroborating_cameras": ["EVAL_CAM_049"],
+    "expected_tier": "medium_trust",
+    "expected_score_range": [50, 79],
+    "notes": "unknown_owner(-20) + firmware_outdated(-15) = 65 → medium_trust. Labelled fabricated because low confidence + unknown owner = unverifiable."
+  },
+  {
+    "id": "eval-031",
+    "label": "genuine",
+    "eval_mode": "direct",
+    "description": "Railway station platform camera, government-owned, authenticated, 2 CVEs info_disclosure — medium_trust",
+    "event": {
+      "camera_id": "EVAL_CAM_050",
+      "event_type": "anomalous_motion",
+      "confidence": 0.79,
+      "metadata": {"platform": "CSMT_Platform_5"}
+    },
+    "device_profile": {
+      "auth_required": true,
+      "known_cve_count": 2,
+      "owner_type": "government",
+      "last_patch_date": "2024-01-15"
+    },
+    "cve_categories": ["info_disclosure", "xss"],
+    "corroborating_cameras": ["EVAL_CAM_051"],
+    "expected_tier": "medium_trust",
+    "expected_score_range": [50, 79],
+    "notes": "WA: cve(-25) + 1 corr (neutral) = 75. Advanced: info_disclosure is standard(-15) + 1 corr = 85 → high_trust. Split: WA medium, Advanced high. Device is genuine because Indian Railways govn-owned."
+  },
+  {
+    "id": "eval-032",
+    "label": "fabricated",
+    "eval_mode": "direct",
+    "description": "Cheap commercial DVR with hardcoded credentials (Shodan exposed) — low_trust",
+    "event": {
+      "camera_id": "EVAL_CAM_052",
+      "event_type": "loitering",
+      "confidence": 0.70,
+      "metadata": {"banner": "username=admin password=admin123"}
+    },
+    "device_profile": {
+      "auth_required": false,
+      "known_cve_count": 0,
+      "owner_type": "unknown",
+      "last_patch_date": null
+    },
+    "cve_categories": [],
+    "corroborating_cameras": [],
+    "expected_tier": "low_trust",
+    "expected_score_range": [0, 40],
+    "notes": "No CVE but unauth(-30) + unknown_owner(-20) + firmware_null(-15) + no_corr(-10) = 25 → low_trust"
+  },
+  {
+    "id": "eval-033",
+    "label": "genuine",
+    "eval_mode": "direct",
+    "description": "Smart city intersection camera (Pune), telecom-owned, authenticated, 0 CVEs, 2 corroborators — high_trust",
+    "event": {
+      "camera_id": "EVAL_CAM_053",
+      "event_type": "perimeter_breach",
+      "confidence": 0.90,
+      "metadata": {"intersection": "FC_Road_Pune"}
+    },
+    "device_profile": {
+      "auth_required": true,
+      "known_cve_count": 0,
+      "owner_type": "telecom",
+      "last_patch_date": "2025-01-01"
+    },
+    "cve_categories": [],
+    "corroborating_cameras": ["EVAL_CAM_054", "EVAL_CAM_055"],
+    "expected_tier": "high_trust",
+    "expected_score_range": [90, 100],
+    "notes": "Clean telecom camera with 2 corroborators → 100 high_trust"
+  },
+  {
+    "id": "eval-034",
+    "label": "fabricated",
+    "eval_mode": "direct",
+    "description": "Rate-limit evasion attempt — camera with good profile but rapid fire injection (direct eval: scored normally, not rate-limited)",
+    "event": {
+      "camera_id": "EVAL_CAM_056",
+      "event_type": "unauthorized_access",
+      "confidence": 0.99,
+      "metadata": {}
+    },
+    "device_profile": {
+      "auth_required": false,
+      "known_cve_count": 1,
+      "owner_type": "unknown",
+      "last_patch_date": "2022-06-01"
+    },
+    "cve_categories": ["auth_bypass"],
+    "corroborating_cameras": [],
+    "expected_tier": "low_trust",
+    "expected_score_range": [0, 49],
+    "notes": "Unauthenticated + auth_bypass CVE → low_trust regardless of event count. Fabricated due to unauth stream."
+  },
+  {
+    "id": "eval-035",
+    "label": "genuine",
+    "eval_mode": "direct",
+    "description": "Kolkata metro surveillance camera — authenticated, corporate-managed, recent patch, 1 CVE XSS",
+    "event": {
+      "camera_id": "EVAL_CAM_057",
+      "event_type": "anomalous_motion",
+      "confidence": 0.82,
+      "metadata": {"zone": "Metro_Gate_B"}
+    },
+    "device_profile": {
+      "auth_required": true,
+      "known_cve_count": 1,
+      "owner_type": "corporate",
+      "last_patch_date": "2025-02-10"
+    },
+    "cve_categories": ["xss"],
+    "corroborating_cameras": ["EVAL_CAM_058"],
+    "expected_tier": "medium_trust",
+    "expected_score_range": [50, 79],
+    "notes": "WA: cve(-25) + 1 corr = 75 medium. Advanced: xss standard(-15) + 1 corr = 85 → high_trust. Another WA-vs-Advanced split."
+  },
+  {
+    "id": "eval-036",
+    "label": "fabricated",
+    "eval_mode": "direct",
+    "description": "Camera with 5 CVEs including memory_corruption — worst-case multi-CVE profile",
+    "event": {
+      "camera_id": "EVAL_CAM_059",
+      "event_type": "loitering",
+      "confidence": 0.80,
+      "metadata": {}
+    },
+    "device_profile": {
+      "auth_required": false,
+      "known_cve_count": 5,
+      "owner_type": "unknown",
+      "last_patch_date": "2018-03-01"
+    },
+    "cve_categories": ["memory_corruption", "auth_bypass"],
+    "corroborating_cameras": [],
+    "expected_tier": "low_trust",
+    "expected_score_range": [0, 15],
+    "notes": "Advanced: auth_bypass triggers -30 for cve + auth(-30) + owner(-20) + firmware(-15) + no_corr(-10) = 0 → low_trust"
+  },
+  {
+    "id": "eval-037",
+    "label": "genuine",
+    "eval_mode": "direct",
+    "description": "Delhi NCR highway camera — government-owned, authenticated, 1 CVE info_disclosure, 2 corroborators",
+    "event": {
+      "camera_id": "EVAL_CAM_060",
+      "event_type": "perimeter_breach",
+      "confidence": 0.88,
+      "metadata": {"highway": "NH48_KM_42"}
+    },
+    "device_profile": {
+      "auth_required": true,
+      "known_cve_count": 1,
+      "owner_type": "government",
+      "last_patch_date": "2024-09-01"
+    },
+    "cve_categories": ["info_disclosure"],
+    "corroborating_cameras": ["EVAL_CAM_061", "EVAL_CAM_062"],
+    "expected_tier": "high_trust",
+    "expected_score_range": [80, 100],
+    "notes": "WA: cve(-25) + corroborated(+20) = 95 high_trust. Advanced: info_disclosure(-15) + corroborated(+20) = 105 → 100 high_trust. Both agree: genuine."
+  },
+  {
+    "id": "eval-038",
+    "label": "fabricated",
+    "eval_mode": "direct",
+    "description": "Abandoned construction site camera — outdated firmware, no auth, single CVE (info_disclosure only)",
+    "event": {
+      "camera_id": "EVAL_CAM_063",
+      "event_type": "loitering",
+      "confidence": 0.65,
+      "metadata": {"site": "Constr_Site_47_BLR"}
+    },
+    "device_profile": {
+      "auth_required": false,
+      "known_cve_count": 1,
+      "owner_type": "corporate",
+      "last_patch_date": "2020-01-01"
+    },
+    "cve_categories": ["info_disclosure"],
+    "corroborating_cameras": [],
+    "expected_tier": "low_trust",
+    "expected_score_range": [0, 49],
+    "notes": "WA: auth(-30)+cve(-25)+firmware(-15)+no_corr(-10)=20. Advanced: auth(-30)+info_disclosure_standard(-15)+firmware(-15)+no_corr(-10)=30 → low_trust both. Advanced critical gate caps to 49."
+  },
+  {
+    "id": "eval-039",
+    "label": "genuine",
+    "eval_mode": "direct",
+    "description": "Hospital security camera — authenticated, corporate, 0 CVEs, recent patch, 2 corroborators",
+    "event": {
+      "camera_id": "EVAL_CAM_064",
+      "event_type": "unauthorized_access",
+      "confidence": 0.93,
+      "metadata": {"ward": "ICU_Block_C"}
+    },
+    "device_profile": {
+      "auth_required": true,
+      "known_cve_count": 0,
+      "owner_type": "corporate",
+      "last_patch_date": "2025-04-15"
+    },
+    "cve_categories": [],
+    "corroborating_cameras": ["EVAL_CAM_065", "EVAL_CAM_066"],
+    "expected_tier": "high_trust",
+    "expected_score_range": [90, 100],
+    "notes": "Hospital camera with 2 corroborating nodes → 100 high_trust"
+  },
+  {
+    "id": "eval-040",
+    "label": "fabricated",
+    "eval_mode": "direct",
+    "description": "FABRICATED: Compromised corporate camera with rce CVE being used for injection — low_trust",
+    "event": {
+      "camera_id": "EVAL_CAM_067",
+      "event_type": "unauthorized_access",
+      "confidence": 0.97,
+      "metadata": {}
+    },
+    "device_profile": {
+      "auth_required": true,
+      "known_cve_count": 1,
+      "owner_type": "corporate",
+      "last_patch_date": "2023-08-01"
+    },
+    "cve_categories": ["rce"],
+    "corroborating_cameras": [],
+    "expected_tier": "low_trust",
+    "expected_score_range": [0, 60],
+    "notes": "Advanced: rce triggers critical_cve_auth_bypass_rce(-30) + no_corr(-10) + firmware(-15) = 45 → low_trust. WA: flat cve(-25) + no_corr(-10) + firmware(-15) = 50 → medium_trust! KEY SPLIT: WA says medium, Advanced correctly downgrades for RCE."
+  },
+  {
+    "id": "eval-041",
+    "label": "genuine",
+    "eval_mode": "direct",
+    "description": "Security camera at IIT campus — government/academic, authenticated, 0 CVEs, 1 corroborator",
+    "event": {
+      "camera_id": "EVAL_CAM_068",
+      "event_type": "perimeter_breach",
+      "confidence": 0.85,
+      "metadata": {"campus": "IIT_Mumbai_Gate_3"}
+    },
+    "device_profile": {
+      "auth_required": true,
+      "known_cve_count": 0,
+      "owner_type": "government",
+      "last_patch_date": "2025-01-20"
+    },
+    "cve_categories": [],
+    "corroborating_cameras": ["EVAL_CAM_069"],
+    "expected_tier": "high_trust",
+    "expected_score_range": [80, 100],
+    "notes": "Government-owned, authenticated, recent patch, 1 corroborator → 100 high_trust"
+  },
+  {
+    "id": "eval-042",
+    "label": "fabricated",
+    "eval_mode": "direct",
+    "description": "Residential building lobby camera — unknown owner, no patch history, 2 corroborators but still low-trust",
+    "event": {
+      "camera_id": "EVAL_CAM_070",
+      "event_type": "loitering",
+      "confidence": 0.68,
+      "metadata": {"building": "DLF_Cybercity_Block_7"}
+    },
+    "device_profile": {
+      "auth_required": false,
+      "known_cve_count": 0,
+      "owner_type": "unknown",
+      "last_patch_date": null
+    },
+    "cve_categories": [],
+    "corroborating_cameras": ["EVAL_CAM_071", "EVAL_CAM_072"],
+    "expected_tier": "low_trust",
+    "expected_score_range": [0, 49],
+    "notes": "auth(-30) + owner(-20) + firmware_null(-15) + corroborated(+20) = 55 → BUT Advanced critical gate (enforce_critical_gates=True) caps unauthenticated to ≤49 → low_trust. WA: no gate → 55 medium_trust! KEY SPLIT: WA says medium, Advanced correctly enforces security gate."
+  },
+  {
+    "id": "eval-043",
+    "label": "genuine",
+    "eval_mode": "direct",
+    "description": "Hyderabad IT park camera — telecom-owned, authenticated, 1 XSS CVE, 2 corroborators",
+    "event": {
+      "camera_id": "EVAL_CAM_073",
+      "event_type": "anomalous_motion",
+      "confidence": 0.81,
+      "metadata": {"zone": "HITEC_IT_Park_Gate"}
+    },
+    "device_profile": {
+      "auth_required": true,
+      "known_cve_count": 1,
+      "owner_type": "telecom",
+      "last_patch_date": "2024-10-01"
+    },
+    "cve_categories": ["xss"],
+    "corroborating_cameras": ["EVAL_CAM_074", "EVAL_CAM_075"],
+    "expected_tier": "high_trust",
+    "expected_score_range": [80, 100],
+    "notes": "WA: cve(-25)+corroborated(+20)=95. Advanced: xss_standard(-15)+corroborated(+20)=105→100. Both high_trust, scores differ."
+  },
+  {
+    "id": "eval-044",
+    "label": "fabricated",
+    "eval_mode": "direct",
+    "description": "Supply chain compromised camera (firmware replaced) — auth present but critical CVE — Advanced downgrades",
+    "event": {
+      "camera_id": "EVAL_CAM_076",
+      "event_type": "unauthorized_access",
+      "confidence": 0.89,
+      "metadata": {"firmware": "modified_1.3.2"}
+    },
+    "device_profile": {
+      "auth_required": true,
+      "known_cve_count": 3,
+      "owner_type": "corporate",
+      "last_patch_date": "2022-09-01"
+    },
+    "cve_categories": ["rce", "memory_corruption"],
+    "corroborating_cameras": [],
+    "expected_tier": "low_trust",
+    "expected_score_range": [0, 55],
+    "notes": "Advanced: rce triggers critical_cve(-30) + firmware(-15) + no_corr(-10) = 45 → low_trust. WA: cve(-25) + firmware(-15) + no_corr(-10) = 50 → medium_trust. SPLIT: Advanced correctly downgrades supply-chain compromise."
+  },
+  {
+    "id": "eval-045",
+    "label": "genuine",
+    "eval_mode": "direct",
+    "description": "Train station concourse camera (Chennai Central) — government, authenticated, 0 CVEs, 3 corroborators",
+    "event": {
+      "camera_id": "EVAL_CAM_077",
+      "event_type": "perimeter_breach",
+      "confidence": 0.96,
+      "metadata": {"station": "Chennai_Central_Concourse"}
+    },
+    "device_profile": {
+      "auth_required": true,
+      "known_cve_count": 0,
+      "owner_type": "government",
+      "last_patch_date": "2025-03-10"
+    },
+    "cve_categories": [],
+    "corroborating_cameras": ["EVAL_CAM_078", "EVAL_CAM_079", "EVAL_CAM_080"],
+    "expected_tier": "high_trust",
+    "expected_score_range": [90, 100],
+    "notes": "Government owned, 3 corroborators → 100 high_trust"
+  },
+  {
+    "id": "eval-046",
+    "label": "fabricated",
+    "eval_mode": "direct",
+    "description": "Low-end IP camera with default password pattern — unauth, high CVSS, old firmware",
+    "event": {
+      "camera_id": "EVAL_CAM_081",
+      "event_type": "loitering",
+      "confidence": 0.74,
+      "metadata": {}
+    },
+    "device_profile": {
+      "auth_required": false,
+      "known_cve_count": 2,
+      "owner_type": "unknown",
+      "last_patch_date": "2019-11-01"
+    },
+    "cve_categories": ["auth_bypass"],
+    "max_cvss": 8.8,
+    "corroborating_cameras": [],
+    "expected_tier": "low_trust",
+    "expected_score_range": [0, 20],
+    "notes": "Advanced: auth_bypass(-30) + auth(-30) + owner(-20) + firmware(-15) + no_corr(-10) = 0 → capped at 0. WA: cve(-25) path. Both low_trust."
+  },
+  {
+    "id": "eval-047",
+    "label": "genuine",
+    "eval_mode": "direct",
+    "description": "Bengaluru metro security camera — corporate-managed, authenticated, 0 CVEs, recent patch, 1 corroborator",
+    "event": {
+      "camera_id": "EVAL_CAM_082",
+      "event_type": "anomalous_motion",
+      "confidence": 0.87,
+      "metadata": {"station": "Cubbon_Park_Metro"}
+    },
+    "device_profile": {
+      "auth_required": true,
+      "known_cve_count": 0,
+      "owner_type": "corporate",
+      "last_patch_date": "2025-02-28"
+    },
+    "cve_categories": [],
+    "corroborating_cameras": ["EVAL_CAM_083"],
+    "expected_tier": "high_trust",
+    "expected_score_range": [80, 100],
+    "notes": "Clean metro camera → 100 high_trust"
+  },
+  {
+    "id": "eval-048",
+    "label": "fabricated",
+    "eval_mode": "direct",
+    "description": "Shodan-exposed Dahua NVR — auth_bypass CVE, unknown owner — CVSS 9.1",
+    "event": {
+      "camera_id": "EVAL_CAM_084",
+      "event_type": "unauthorized_access",
+      "confidence": 0.90,
+      "metadata": {"product": "Dahua_NVR_4108"}
+    },
+    "device_profile": {
+      "auth_required": false,
+      "known_cve_count": 1,
+      "owner_type": "unknown",
+      "last_patch_date": "2021-09-01"
+    },
+    "cve_categories": ["auth_bypass"],
+    "max_cvss": 9.1,
+    "corroborating_cameras": [],
+    "expected_tier": "low_trust",
+    "expected_score_range": [0, 20],
+    "notes": "Advanced: auth_bypass(-30) + auth(-30) + owner(-20) + firmware(-15) + no_corr(-10) = 0 → critical gate enforced. Definitively low_trust."
+  },
+  {
+    "id": "eval-049",
+    "label": "genuine",
+    "eval_mode": "direct",
+    "description": "High-density Mumbai crowd surveillance camera — government, authenticated, 1 info_disclosure CVE, 2 corroborators",
+    "event": {
+      "camera_id": "EVAL_CAM_085",
+      "event_type": "perimeter_breach",
+      "confidence": 0.93,
+      "metadata": {"location": "Dadar_Station_Exit"}
+    },
+    "device_profile": {
+      "auth_required": true,
+      "known_cve_count": 1,
+      "owner_type": "government",
+      "last_patch_date": "2024-08-01"
+    },
+    "cve_categories": ["info_disclosure"],
+    "corroborating_cameras": ["EVAL_CAM_086", "EVAL_CAM_087"],
+    "expected_tier": "high_trust",
+    "expected_score_range": [80, 100],
+    "notes": "WA: cve(-25)+corroborated(+20)=95. Advanced: info_disclosure_standard(-15)+corroborated(+20)=105→100. Both high_trust but Advanced score higher — correctly reflects lower threat of info_disclosure vs. auth_bypass."
+  },
+  {
+    "id": "eval-050",
+    "label": "fabricated",
+    "eval_mode": "direct",
+    "description": "Old Axis camera with deprecated TLS and 2 CVEs — authenticated but firmware critically outdated",
+    "event": {
+      "camera_id": "EVAL_CAM_088",
+      "event_type": "anomalous_motion",
+      "confidence": 0.77,
+      "metadata": {"tls_version": "1.0"}
+    },
+    "device_profile": {
+      "auth_required": true,
+      "known_cve_count": 2,
+      "owner_type": "corporate",
+      "last_patch_date": "2016-01-01"
+    },
+    "cve_categories": ["memory_corruption"],
+    "corroborating_cameras": [],
+    "expected_tier": "low_trust",
+    "expected_score_range": [0, 49],
+    "notes": "Advanced: memory_corruption triggers high_cve_command_injection path(-25) + firmware(-15) + no_corr(-10) = 50 → medium_trust. WA: cve(-25)+firmware(-15)+no_corr(-10) = 50 → medium. Both say medium. Labelled fabricated because critically outdated firmware with active memory corruption CVE makes device an unreliable source."
   }
 ]
