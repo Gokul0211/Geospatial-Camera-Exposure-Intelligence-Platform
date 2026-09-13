@@ -1,0 +1,33 @@
+.env
+.env.*
+!.env.example
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+*.zip
+*.log
+.coverage
+htmlcov/
+# SQLite database binaries — never commit these; directories are tracked via .gitkeep
+data/*.db
+backend/data/*.db
+backend/*.sqlite
+backend/*.sqlite3
+*.db-journal
+*.db-wal
+*.db-shm
+node_modules/
+dist/
+.venv/
+venv/
+*.egg-info/
+# Trained GNN weights — deliberately not committed. Each developer trains
+# locally on synthetic data via `python scripts/train_gnn_collusion_model.py`
+# (see GNN_TRAINING_GUIDE.md), takes well under a minute, no GPU needed.
+backend/ml_weights/*.pt
+.DS_Store
+desktop.ini
+Thumbs.db
+*.docx
+*.tmp

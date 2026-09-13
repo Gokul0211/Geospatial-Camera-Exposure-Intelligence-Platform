@@ -1,0 +1,12 @@
+fastapi>=0.115.0
+uvicorn[standard]>=0.32.0
+python-dotenv>=1.0.1
+aiosqlite>=0.20.0
+httpx>=0.28.0
+shodan>=1.31.0
+ipwhois>=1.2.0
+pydantic>=2.10.0
+groq
+# Dev / test
+pytest>=8.0.0
+pytest-asyncio>=0.24.0

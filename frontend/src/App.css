@@ -1,0 +1,149 @@
+/* App.css — Utility animations and global component overrides */
+/* Vite boilerplate has been removed */
+
+/* ── Slide-in for alert toasts ─────────────────────────────────────── */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Streaming cursor blink ────────────────────────────────────────── */
+@keyframes blink-cursor {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.streaming-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 11px;
+  background: #60a5fa;
+  border-radius: 1px;
+  animation: blink-cursor 0.8s ease-in-out infinite;
+  vertical-align: middle;
+  margin-left: 2px;
+}
+
+/* ── Shimmer scan effect ────────────────────────────────────────────── */
+@keyframes shimmer {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+
+/* ── Neon pulse (for critical elements) ────────────────────────────── */
+@keyframes neon-pulse {
+  0%, 100% {
+    box-shadow: 0 0 4px currentColor, 0 0 8px currentColor;
+    opacity: 1;
+  }
+  50% {
+    box-shadow: 0 0 10px currentColor, 0 0 20px currentColor, 0 0 40px currentColor;
+    opacity: 0.85;
+  }
+}
+
+/* ── Radar sweep ────────────────────────────────────────────────────── */
+@keyframes radar-sweep {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* ── Count-up flash ─────────────────────────────────────────────────── */
+@keyframes value-flash {
+  0%   { opacity: 0.3; filter: brightness(2.5); }
+  100% { opacity: 1;   filter: brightness(1); }
+}
+
+.value-flash {
+  animation: value-flash 0.5s ease-out;
+}
+
+/* ── Glow border for panels ─────────────────────────────────────────── */
+@keyframes glow-border-pulse {
+  0%, 100% { border-color: rgba(0, 229, 255, 0.15); }
+  50%       { border-color: rgba(0, 229, 255, 0.45); }
+}
+
+/* ── Scan line travel ───────────────────────────────────────────────── */
+@keyframes scan-travel {
+  0%   { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+
+/* ── Boot splash fade out ───────────────────────────────────────────── */
+@keyframes splash-fade-out {
+  0%   { opacity: 1; }
+  80%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes splash-logo-in {
+  0%   { transform: scale(0.8); opacity: 0; }
+  60%  { transform: scale(1.05); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes splash-tagline-in {
+  0%, 30% { opacity: 0; transform: translateY(10px); }
+  100%     { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes splash-bar-fill {
+  from { width: 0%; }
+  to   { width: 100%; }
+}
+
+/* ── Ripple on FAB ─────────────────────────────────────────────────── */
+@keyframes ripple {
+  0%   { transform: scale(0); opacity: 0.7; }
+  100% { transform: scale(4); opacity: 0; }
+}
+
+/* ── Orbit ring around logo ─────────────────────────────────────────── */
+@keyframes orbit-ring {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to   { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* ── Colon blink for clock ──────────────────────────────────────────── */
+@keyframes colon-blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.2; }
+}
+
+.clock-colon {
+  animation: colon-blink 1s ease-in-out infinite;
+}
+
+/* ── Analytics FAB ─────────────────────────────────────────────────── */
+#analytics-toggle-btn {
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  overflow: hidden;
+}
+
+#analytics-toggle-btn:hover {
+  transform: scale(1.12);
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.5) !important;
+  border-color: #3b82f6 !important;
+}
+
+#analytics-toggle-btn:active {
+  transform: scale(0.95);
+}
