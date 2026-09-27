@@ -46,6 +46,8 @@ services:
         condition: service_healthy
 
   video-pipeline:
+    # Opt-in: docker compose --profile video up. Heavy (PyTorch) and needs sample_footage/.
+    profiles: ["video"]
     build: ./video_pipeline
     depends_on:
       backend:

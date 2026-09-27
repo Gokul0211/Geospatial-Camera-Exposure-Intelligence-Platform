@@ -513,7 +513,7 @@ export default function SurveillanceMap({ city, onCityChange, layers, selected, 
     if (!nlQuery.trim()) return;
     setNlLoading(true);
     try {
-      const res = await fetch('http://localhost:8000/api/nl-query', {
+      const res = await fetch('/api/nl-query', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query: nlQuery, current_city: city }),

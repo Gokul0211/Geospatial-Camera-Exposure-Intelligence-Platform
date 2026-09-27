@@ -77,9 +77,8 @@ export default function LiveAlerts({ onSelectDevice }) {
         wsRef.current.close();
       }
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = window.location.port === '5173'
-        ? `${protocol}//127.0.0.1:8000/api/ws/alerts`
-        : `${protocol}//${window.location.host}/api/ws/alerts`;
+      // Same origin everywhere: Vite proxies /api (ws: true) in dev, nginx in Docker/prod.
+      const wsUrl = `${protocol}//${window.location.host}/api/ws/alerts`;
       const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
 
@@ -129,9 +128,9 @@ export default function LiveAlerts({ onSelectDevice }) {
     const camNum = Math.floor(Math.random() * 800) + 100;
 
     try {
-      const res = await fetch('http://localhost:8000/api/detection-event', {
+      const res = await fetch('/api/detection-event', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-API-Key': 'dev-secret-key-12345' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           camera_id: `mumbai_cam_${camNum}`, city: 'Mumbai',
           event_type: selectedEvent, timestamp: new Date().toISOString(),
@@ -458,7 +457,7 @@ export default function LiveAlerts({ onSelectDevice }) {
                       onClick={async (e) => {
                         e.stopPropagation();
                         try {
-                          await fetch(`http://localhost:8000/api/alerts/${alert.id}/verdict`, {
+                          await fetch(`/api/alerts/${alert.id}/verdict`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ verdict: 'verified' }),
@@ -486,7 +485,7 @@ export default function LiveAlerts({ onSelectDevice }) {
                       onClick={async (e) => {
                         e.stopPropagation();
                         try {
-                          await fetch(`http://localhost:8000/api/alerts/${alert.id}/verdict`, {
+                          await fetch(`/api/alerts/${alert.id}/verdict`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ verdict: 'false_alarm' }),

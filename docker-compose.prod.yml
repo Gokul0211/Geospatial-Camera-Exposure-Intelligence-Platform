@@ -1,0 +1,37 @@
+# Production override for a single VM.
+#   python scripts/make_public_snapshot.py data/surveillancewatch.db data/public.db
+#   DOMAIN=cobra.example.com docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+# Needs Docker Compose v2.24+ (for !reset). Only Caddy is reachable from outside.
+
+services:
+  backend:
+    ports: !reset []
+    environment:
+      - PUBLIC_DEMO=1
+      # Scrubbed copy from scripts/make_public_snapshot.py. Never point this at the real DB.
+      - DATABASE_PATH=/app/data/public.db
+      # Blank on purpose: GET /api/devices re-fetches from Shodan when the cache is stale,
+      # which would write real IPs back into public.db. Without a key it serves the snapshot.
+      - SHODAN_API_KEY=
+    restart: unless-stopped
+
+  frontend:
+    ports: !reset []
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - DOMAIN=${DOMAIN:?set DOMAIN to your hostname}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+    depends_on:
+      - frontend
+    restart: unless-stopped
+
+volumes:
+  caddy_data:

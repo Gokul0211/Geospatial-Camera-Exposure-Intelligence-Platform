@@ -120,6 +120,10 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Public demo scrubbing sits inside CORS so its 403s still carry CORS headers.
+import public_demo
+public_demo.install(app)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ORIGINS,
