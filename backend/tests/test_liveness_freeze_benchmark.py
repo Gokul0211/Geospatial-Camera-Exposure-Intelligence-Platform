@@ -523,18 +523,23 @@ def test_tier2_compute_visual_liveness_formulation():
     res = compute_visual_liveness(freeze_flag=False, quality_drift=0.0, spec_mismatch_flag=False)
     assert res["liveness_score"] == 1.0
 
-    # Freeze only: penalty = 0.5 -> L = 0.5
+    # Weights are (1.0, 0.6, 0.5): each confirmed failure alone reaches the gate's lower threshold.
+    # Freeze only: penalty = 1.0 -> L = 0.0
     res = compute_visual_liveness(freeze_flag=True, quality_drift=0.0, spec_mismatch_flag=False)
-    assert res["liveness_score"] == pytest.approx(0.5, abs=1e-4)
+    assert res["liveness_score"] == pytest.approx(0.0, abs=1e-4)
     assert "visual_tamper:freeze_or_loop_detected" in res["liveness_factors"]
 
-    # Spec mismatch only: penalty = 0.20 -> L = 0.80
-    res = compute_visual_liveness(freeze_flag=False, quality_drift=0.0, spec_mismatch_flag=True)
-    assert res["liveness_score"] == pytest.approx(0.80, abs=1e-4)
+    # Maximal blur only: penalty = 0.6 -> L = 0.4
+    res = compute_visual_liveness(freeze_flag=False, quality_drift=1.0, spec_mismatch_flag=False)
+    assert res["liveness_score"] == pytest.approx(0.4, abs=1e-4)
 
-    # Both freeze and spec mismatch: penalty = max(0.5, 0.20) = 0.5 -> L = 0.5
-    res = compute_visual_liveness(freeze_flag=True, quality_drift=0.0, spec_mismatch_flag=True)
+    # Spec mismatch only: penalty = 0.5 -> L = 0.5
+    res = compute_visual_liveness(freeze_flag=False, quality_drift=0.0, spec_mismatch_flag=True)
     assert res["liveness_score"] == pytest.approx(0.5, abs=1e-4)
+
+    # Both freeze and spec mismatch: penalty = max(1.0, 0.5) = 1.0 -> L = 0.0
+    res = compute_visual_liveness(freeze_flag=True, quality_drift=0.0, spec_mismatch_flag=True)
+    assert res["liveness_score"] == pytest.approx(0.0, abs=1e-4)
 
 
 def test_tier2_feeds_into_integrity_gate():

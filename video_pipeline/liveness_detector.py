@@ -205,7 +205,9 @@ class FrameLivenessTracker:
 
         # 5. Composite L(t) Formulation
         # L(t) = 1 - max(w1 * Freeze, w2 * QualityDrift, w3 * SpecMismatch)
-        w_freeze, w_quality, w_spec = 0.50, 0.30, 0.20
+        # Weights (1.0, 0.6, 0.5): each confirmed failure alone can push L(t) to or below
+        # the gate's lower threshold (0.5), so Tier 2 can reach low trust without Tier 1 drift.
+        w_freeze, w_quality, w_spec = 1.0, 0.60, 0.50
         penalty = max(
             (1.0 if self.is_frozen else 0.0) * w_freeze,
             quality_drift * w_quality,

@@ -285,7 +285,7 @@ def compute_visual_liveness(
     freeze_flag: bool = False,
     quality_drift: float = 0.0,
     spec_mismatch_flag: bool = False,
-    weights: tuple[float, float, float] = (0.50, 0.30, 0.20),
+    weights: tuple[float, float, float] = (1.00, 0.60, 0.50),
 ) -> dict[str, Any]:
     """
     Compute Visual Liveness Score L(t) for authorized cameras in FOOTAGE_CAMERA_MAP.

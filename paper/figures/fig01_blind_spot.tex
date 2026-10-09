@@ -1,0 +1,55 @@
+% Fig. 1 -- The CVE-only blind spot (single column, 3.5 in).
+% Compile with pdfLaTeX (Overleaf default). Output: fig01_blind_spot.pdf
+\documentclass[border=3pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{newtxtext,newtxmath}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,calc}
+
+\definecolor{acc}{RGB}{31,78,121}      % single accent: marks what is new in IG-DCTF
+\colorlet{accfill}{acc!10}
+\colorlet{gfill}{black!7}
+
+\tikzset{
+  every node/.style={font=\footnotesize},
+  cell/.style={draw=black,line width=0.5pt,fill=white,align=center,inner sep=2pt,
+               minimum width=94pt,minimum height=16pt},
+  tall/.style={minimum height=24pt},
+  gray cell/.style={fill=gfill},
+  acc cell/.style={draw=acc,fill=accfill,line width=0.7pt},
+  rowlab/.style={anchor=east,align=right,inner sep=0pt},
+}
+
+\begin{document}
+\begin{tikzpicture}[x=1pt,y=1pt]
+  % column headers
+  \node at (97,2)  {\textbf{(a) Genuine feed}};
+  \node at (197,2) {\textbf{(b) Decoy swap}};
+
+  % ---- inputs to the two channels
+  \node[rowlab] at (44,-24) {Banner};
+  \node[rowlab] at (44,-50) {$T_{\mathrm{cve}}$};
+  \node[rowlab] at (44,-74) {$s$};
+
+  \node[cell,tall] at (97,-24)  {1080p, H.264\\ports 80, 554, 8000};
+  \node[cell]      at (97,-50)  {$100$};
+  \node[cell]      at (97,-74)  {$0.98$};
+
+  \node[cell,tall] at (197,-24) {480p, MJPEG\\port 8080 only};
+  \node[cell]      at (197,-50) {$100$};
+  \node[cell,acc cell] at (197,-74) {$0.18$};
+
+  % separator between inputs and decisions
+  \draw[black!50,line width=0.4pt,dash pattern=on 2pt off 2pt] (0,-90) -- (248,-90);
+
+  % ---- decisions
+  \node[rowlab] at (44,-110) {CVE-only};
+  \node[rowlab] at (44,-140) {IG-DCTF};
+
+  \node[cell,tall,gray cell] at (97,-110)  {$T_{\mathrm{cve}}=100$\\high trust};
+  \node[cell,tall]           at (97,-140)  {$T_{\mathrm{cve}}G(s)=100$\\high trust};
+
+  \node[cell,tall,gray cell] at (197,-110) {$T_{\mathrm{cve}}=100$\\high trust};
+  \node[cell,tall,acc cell]  at (197,-140) {$T_{\mathrm{cve}}G(s)=30$\\low trust};
+\end{tikzpicture}
+\end{document}
