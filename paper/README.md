@@ -9,7 +9,11 @@ paper/
   figures/figNN_*.tex   one standalone TikZ/pgfplots file per figure
   scripts/compute_results.py   regenerates results.md and data/results.json
   scripts/lint_tex.py          brace/environment sanity check (not a substitute for compiling)
+  LOG.md                append-only worklog          CLAIMS.md   claim -> evidence ledger
+  TODO.md               open tasks and decisions     Q1.md       Q1 plan and novelty audit
+  DATASETS.md           datasets and testing plan
 ```
+Agent instructions for the whole repository are in `../CLAUDE.md`.
 
 ## Rendering the figures in Overleaf
 1. Upload the whole `paper/` folder as a project.
