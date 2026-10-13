@@ -74,6 +74,7 @@ from services.vulnerability_service import get_max_epss_score, get_kev_active_fr
 from services.cold_start_service import is_cold_start_device, compute_stereotype_prior
 
 import time
+from contextvars import ContextVar
 
 router = APIRouter()
 
@@ -104,6 +105,11 @@ async def _require_api_key(x_api_key: str | None = Header(default=None)) -> None
                 "GET routes do not require authentication."
             ),
         )
+
+
+# True while a request that generates synthetic traffic (attack simulator, demo scenario) is being handled,
+# so clients can label those alerts honestly. Set per request/task; never set by real detection events.
+DEMO_MODE: ContextVar[bool] = ContextVar("cobra_demo_mode", default=False)
 
 
 # ---------------------------------------------------------------------------
@@ -550,6 +556,7 @@ async def receive_detection_event(
             "integrity_gate_tripped": live_gate_tripped,
             "gate_status": live_gate_status,
             "cyber_trust_score": ig_result["cyber_trust_score"],
+            "demo": DEMO_MODE.get(),
         }
         if live_gate_tripped:
             # Emit a dedicated integrity gate trip event in addition to the ALERT

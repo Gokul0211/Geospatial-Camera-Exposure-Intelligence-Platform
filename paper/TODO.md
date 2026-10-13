@@ -9,6 +9,7 @@ Tick items with the date; add new ones at the bottom of their section. Mirror im
 - [ ] Tier 2 mismatch weight 0.5: keep, or soften to 0.4 (tapers to medium instead of low)?
 
 ## Paper hygiene (small, do soon)
+- [x] 2026-10-10 all figure PDFs final (fig 09 recompiled)
 - [ ] Add missing prior art to Related Work and soften the novelty claim (C13): ENF false-frame injection (Sensors 2019),
       SurFi looping detection (arXiv 1904.01350), PRNU surveillance-camera authentication (Expert Syst. Appl. 2026),
       US 8,806,632 (IP-device spoofing via HTTP/TCP fingerprints), MATE trust-aware fusion (CCS 2025), camera tamper datasets (UHCTD).
@@ -31,3 +32,15 @@ Tick items with the date; add new ones at the bottom of their section. Mirror im
 - [ ] U3 Real data: (a) longitudinal Censys, (b) controlled testbed
 - [ ] U4 Adaptive-adversary analysis
 - [ ] U5 Decision-theoretic dispatch evaluation (optional)
+
+## Ethics guard (found 2026-10-10)
+- [ ] Decide how to neutralise `backend/services/heartbeat_service.py` / `/api/heartbeat/*` (it opens TCP connections to device IPs): disable by default behind an
+      env flag, or remove, before any study that touches third-party hosts. Not changed yet (needs the user's decision). Related: `CENSYS_APPLICATION.md`.
+- [ ] Send the Censys application answers (`CENSYS_APPLICATION.md`) after filling the mentor details.
+
+## Frontend follow-ups (2026-10-12)
+- [ ] Decide what to do with the dev DB ledger (`audit_ledger` has 32 chain starts; verify says tamper at entry 1): clear the table, or make tests use a temp DB.
+- [ ] Try `docker compose build frontend` once; the new Dockerfile/compose were never built.
+- [ ] Confirm the footer credit ("Built by Gokul Annamalai and team") and add the repo URL via `NEXT_PUBLIC_REPO_URL`.
+- [ ] `/research` page: add the before/after trust-score table from `paper/results.md` (numbers not in the spec).
+- [ ] Optional: a real satellite source, or remove the Satellites layer toggle.

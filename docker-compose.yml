@@ -2,7 +2,7 @@ version: "3.9"
 
 # COBRA-WATCH Docker Compose
 # ==========================
-# Brings up: backend (FastAPI) + frontend (nginx) + video-pipeline (PyTorch/YOLOv8)
+# Brings up: backend (FastAPI) + frontend (Next.js) + video-pipeline (PyTorch/YOLOv8)
 #
 # SQLite note: single backend container, single writer — fine for demo/eval scale.
 # SQLite does not handle concurrent writes at production scale — documented in report.
@@ -11,9 +11,9 @@ version: "3.9"
 #   cp .env.example .env && nano .env   # fill in real API keys
 #   docker-compose up --build
 #
-# The frontend is accessible at http://localhost:5173
-# The backend API is accessible at http://localhost:8000
-# (and proxied through nginx at http://localhost:5173/api)
+# The web app is accessible at http://localhost:3000
+# The backend API is accessible at http://localhost:8000 (the browser calls it directly;
+# CORS_ORIGINS in .env must include http://localhost:3000)
 
 services:
 
@@ -36,11 +36,13 @@ services:
       start_period: 10s
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        # Inlined at build time: must be the backend URL as the BROWSER sees it.
+        NEXT_PUBLIC_COBRA_API_URL: ${NEXT_PUBLIC_COBRA_API_URL:-http://localhost:8000}
     ports:
-      # Map container's nginx port 80 → host port 5173 so the URL matches the
-      # Vite dev proxy URL (http://localhost:5173) — no frontend config changes needed.
-      - "5173:80"
+      - "3000:3000"
     depends_on:
       backend:
         condition: service_healthy

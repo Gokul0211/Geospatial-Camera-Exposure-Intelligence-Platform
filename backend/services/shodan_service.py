@@ -207,6 +207,12 @@ async def fetch_and_cache_city(city: str) -> list:
     never happen once a city had been seeded/cached once, even after CACHE_TTL_HOURS
     had long passed. Fixed to actually honor the TTL.
     """
+    # "All India" is an aggregate over the real cities, not a Shodan city: it has no row in `cities`
+    # to carry a freshness timestamp, so it can never be "fresh" and would trigger a live Shodan
+    # re-fetch (and fail) on every request. Each real city refreshes itself; serve the union from cache.
+    if city in ("All India", "All", "all"):
+        return await _load_from_cache(city)
+
     cached = await _load_from_cache(city)
     if cached and await _is_cache_fresh(city):
         return cached

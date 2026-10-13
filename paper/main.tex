@@ -79,7 +79,7 @@ The security literature has responded with vulnerability scoring: CVSS-based aud
 
 This paper makes four contributions.
 \begin{enumerate}
-\item \textbf{Problem and threat model.} We formalise authenticity-aware device trust for OSINT-discovered cameras, including a passive-measurement boundary under which the platform sends no packets to discovered devices (Section~\ref{sec:problem}).
+\item \textbf{Problem and threat model.} We formalise authenticity-aware device trust for OSINT-discovered cameras, including a passive-measurement boundary under which the scoring path sends no packets to discovered devices (Section~\ref{sec:problem}).
 \item \textbf{IG-DCTF.} We introduce a dual-channel score whose channels are fused by a multiplicative gate, and prove three properties: non-compensation, tolerance of single-field benign updates, and bounded sensitivity (Section~\ref{sec:method}).
 \item \textbf{Two authenticity tiers.} Tier~1 turns already-collected banner metadata into a drift signal; Tier~2 combines perceptual-hash freeze detection, EWMA sharpness tracking and declared-spec checking. A reachability analysis of the Tier~2 weights determines which failures can drive the final score to low trust on their own, and motivated the weight vector we use.
 \item \textbf{Evaluation with an explicit protocol.} We compare against three vulnerability-only baselines, an ablation, and an additive-fusion control on a fixed corpus with Wilson intervals and a paired exact test, and we state the limits of that corpus (Section~\ref{sec:eval}).
@@ -132,7 +132,7 @@ $\mathcal{A}_1$ substitutes the endpoint with a decoy or honeypot, or inserts a 
 \end{figure}
 
 \subsection{Assumptions and Boundary}
-We assume the platform, its database and its API key are uncompromised, and that the first banner fingerprint recorded for a device is genuine. The platform is \emph{passive}: it only reads metadata that a commercial scanner has already collected and never connects to a discovered device. Frame-level analysis is restricted by construction to a whitelist of authorized streams; a non-whitelisted RTSP source raises an error before any frame is read. An adversary who reproduces the baseline banner exactly (static impersonation), or who degrades a stream slowly enough for the sharpness baseline to follow, is outside what the signals can detect; we return to this in Section~\ref{sec:discussion}.
+We assume the platform, its database and its API key are uncompromised, and that the first banner fingerprint recorded for a device is genuine. The platform is \emph{passive}: it only reads metadata that a commercial scanner has already collected and its scoring path never connects to a discovered device. Frame-level analysis is restricted by construction to a whitelist of authorized streams; a non-whitelisted RTSP source raises an error before any frame is read. An adversary who reproduces the baseline banner exactly (static impersonation), or who degrades a stream slowly enough for the sharpness baseline to follow, is outside what the signals can detect; we return to this in Section~\ref{sec:discussion}.
 
 %% ---------------------------------------------------------------------
 \section{Integrity-Gated Dual-Channel Trust Fusion}
@@ -389,7 +389,7 @@ Table~\ref{tab:detectors} separates \emph{detection} from \emph{consequence}. Th
 \begin{figure}[!t]
 \centering
 \figinc{fig10_decision_map}{\columnwidth}
-\caption{Decision map in the $(\Drift,L)$ plane. Curves are the iso-lines $(1-\Drift)L=0.50$ and $0.85$; markers are the 30 corpus scenarios that carry Channel-B fields (scenarios without a Tier-2 value are drawn at $L=1$). All genuine scenarios have $s\ge 0.686$ and all fabricated ones $s\le 0.38$.}
+\caption{Decision map in the $(\Drift,L)$ plane. Curves are the iso-lines $(1-\Drift)L=0.50$ and $0.85$; shading is white for nominal, light grey for tapered and dark grey for hard-gated; markers are the 30 corpus scenarios that carry Channel-B fields (scenarios without a Tier-2 value are drawn at $L=1$). All genuine scenarios have $s\ge 0.686$ and all fabricated ones $s\le 0.38$.}
 \label{fig:map}
 \end{figure}
 We swept $\thlo\in[0.30,0.60]$ and $\thhi\in[0.70,0.95]$ (42 pairs) with the same tier cut-offs as the main comparison. $F_1$ is 0.976 at every pair. The surface is flat because the corpus has a wide margin around both thresholds (Fig.~\ref{fig:map}); it shows that the result is not tuned to a particular point, but also that this corpus \emph{cannot select} the thresholds. They are justified by design instead: $\thhi=0.85$ lets any single-field update pass with a mild taper (Proposition~3), and $\thlo=0.5$ places the hard region where more than half of the integrity budget is lost. Scenarios near the thresholds need real data. Scoring one event costs 4.7\,$\mu$s for the full pipeline against 2.6\,$\mu$s for Channel~A alone (in-process, excluding I/O).
@@ -404,7 +404,7 @@ We swept $\thlo\in[0.30,0.60]$ and $\thhi\in[0.70,0.95]$ (42 pairs) with the sam
 
 \textbf{Weights.} The Tier~2 weights $(1.0,0.6,0.5)$ are set by the reachability condition $w>0.4$ of Proposition~5, not fitted to data, and were revised once after inspecting the synthetic benchmark. Their cost is false trips: a resolution mismatch alone now reaches low trust, so a camera that legitimately serves a sub-stream below its declared resolution would be penalised, and a long static scene could mimic a freeze. Neither effect is measured here. Learning the weights, or making the mismatch term depend on the stream profile, from labelled field data is a further step.
 
-\textbf{Ethics and dual use.} The platform handles infrastructure metadata only, extracts no biometric or personal data, sends no packets to discovered devices, and processes video only from a whitelist. Aggregated vulnerability maps can be misused as target lists; the design mitigates this with authenticated write endpoints, rate limits and a tamper-evident ledger, and critical findings are to be reported to the relevant CERT before dissemination.
+\textbf{Ethics and dual use.} The platform handles infrastructure metadata only, extracts no biometric or personal data, sends no packets to discovered devices on its scoring path, and processes video only from a whitelist. The codebase also contains an optional heartbeat module that opens TCP connections to a device; it is outside the scoring path and must stay disabled for any third-party host. Aggregated vulnerability maps can be misused as target lists; the design mitigates this with authenticated write endpoints, rate limits and a tamper-evident ledger, and critical findings are to be reported to the relevant CERT before dissemination.
 
 \textbf{Future work.} Longitudinal Shodan snapshots with known device replacements would turn Tier~1 from a synthetic to an empirical result; real footage with day--night transitions would test the freeze rule; adaptive adversaries who optimise against the gate should be studied; and the auxiliary modules of Section~\ref{sec:impl} need their own evaluation.
 

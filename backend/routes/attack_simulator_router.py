@@ -26,10 +26,11 @@ import uuid
 from datetime import datetime, timedelta, timezone
 
 import aiosqlite
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
 from config import DATABASE_PATH
 from routes.alerts import (
+    DEMO_MODE,
     DetectionEvent,
     receive_detection_event,
     _seen_idempotency_keys,
@@ -39,7 +40,12 @@ from routes.alerts import (
 from services.corroboration_service import add_adjacency, get_velocity_alerts
 from services.collusion_graph_service import detect_collusion_clusters, GRAPH_EDGE_MIN_COUNT
 
-router = APIRouter()
+async def _mark_demo() -> None:
+    """Everything this router generates is synthetic; flag its alerts as demo traffic."""
+    DEMO_MODE.set(True)
+
+
+router = APIRouter(dependencies=[Depends(_mark_demo)])
 
 # Dedicated demo camera IDs — created once, reused across every simulation run
 # so repeated demo clicks don't pollute the devices table with junk rows.

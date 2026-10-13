@@ -38,7 +38,7 @@
   \node[chan] (A1) at (142,-30) {Authentication\\(banner)};
   \node[chan] (A2) at (206,-30) {CVE class\\(CWE map)};
   \node[chan] (A3) at (142,-62) {Owner,\\patch age};
-  \node[chan] (A4) at (206,-62) {Corroboration\\(adjacency, Re-ID)};
+  \node[chan] (A4) at (206,-62) {Corroboration\\(neighbours)};
   \node[blk,minimum width=58pt] (Tc) at (272,-46) {Cyber trust\\$T_{\mathrm{cve}}$};
   \draw[flow] (A2.east) -| (Tc.north);
   \draw[flow] (A4.east) -| (Tc.south);

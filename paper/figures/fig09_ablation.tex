@@ -24,20 +24,22 @@
     ytick={0,1,2,3},
     yticklabels={Channel A only,Channel B only,Additive fusion,IG-DCTF},
     y dir=reverse,
+    axis x line*=bottom, axis y line*=left,   % no right/top frame: it ran through the value labels
     xmajorgrids, grid style={black!12,line width=0.3pt},
     axis line style={line width=0.5pt}, tick style={line width=0.5pt},
     clip=false,
 ]
-  \addplot[xbar,fill=black!30,draw=black,line width=0.4pt] coordinates {(0.8113,0)};
-  \addplot[xbar,fill=black!30,draw=black,line width=0.4pt] coordinates {(0.4444,1)};
-  \addplot[xbar,fill=black!55,draw=black,line width=0.4pt] coordinates {(0.9138,2)};
-  \addplot[xbar,fill=acc,     draw=black,line width=0.4pt] coordinates {(0.9756,3)};
+  % bar shift=0pt keeps every single-bar plot centred on its own y position
+  \addplot[xbar,bar shift=0pt,fill=black!30,draw=black,line width=0.4pt] coordinates {(0.8113,0)};
+  \addplot[xbar,bar shift=0pt,fill=black!30,draw=black,line width=0.4pt] coordinates {(0.4444,1)};
+  \addplot[xbar,bar shift=0pt,fill=black!55,draw=black,line width=0.4pt] coordinates {(0.9138,2)};
+  \addplot[xbar,bar shift=0pt,fill=acc,     draw=black,line width=0.4pt] coordinates {(0.9756,3)};
 
   % value and miss-count annotations to the right of each bar
-  \node[anchor=west,inner sep=2pt] at (axis cs:0.8113,0) {0.811 \,(20)};
-  \node[anchor=west,inner sep=2pt] at (axis cs:0.4444,1) {0.444 \,(45)};
-  \node[anchor=west,inner sep=2pt] at (axis cs:0.9138,2) {0.914 \,(10)};
-  \node[anchor=west,inner sep=2pt] at (axis cs:0.9756,3) {0.976 \,(3)};
+  \node[anchor=west,inner sep=1.5pt,fill=white,xshift=3pt] at (axis cs:0.8113,0) {0.811 (20)};
+  \node[anchor=west,inner sep=1.5pt,fill=white,xshift=3pt] at (axis cs:0.4444,1) {0.444 (45)};
+  \node[anchor=west,inner sep=1.5pt,fill=white,xshift=3pt] at (axis cs:0.9138,2) {0.914 (10)};
+  \node[anchor=west,inner sep=1.5pt,fill=white,xshift=3pt] at (axis cs:0.9756,3) {0.976 (3)};
 \end{axis}
 \end{tikzpicture}
 \end{document}

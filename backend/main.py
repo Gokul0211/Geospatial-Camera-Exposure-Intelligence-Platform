@@ -51,6 +51,7 @@ from services.audit_ledger import load_from_db as load_audit_ledger
 from routes import audit_router, decay_router, heartbeat_router, analytics_router
 from routes import integrity_router
 from routes import attack_simulator_router, nl_query_router
+from routes import config_router, scenarios_router
 
 
 # ---------------------------------------------------------------------------
@@ -148,6 +149,9 @@ app.include_router(integrity_router.router, prefix="/api")
 # Module H: live attack-mode simulator + natural-language map query
 app.include_router(attack_simulator_router.router, prefix="/api")
 app.include_router(nl_query_router.router, prefix="/api")
+# Public read-only config (thresholds) and the clearly-labelled demo scenario runner
+app.include_router(config_router.router, prefix="/api")
+app.include_router(scenarios_router.router, prefix="/api")
 
 
 # ---------------------------------------------------------------------------

@@ -65,6 +65,19 @@ async def get_audit_ledger(
     }
 
 
+@router.get("/devices/{camera_id}/audit-trail")
+async def get_device_audit_trail(camera_id: str, limit: int = Query(50, ge=1, le=500)):
+    """
+    Ledger entries recorded for one camera, newest first.
+
+    The ledger is a single chain across all devices, so this filters it on the payload's
+    camera_id. Each entry keeps its real sequence_id and hashes, so the trail can still be
+    checked against `/api/audit/verify`.
+    """
+    entries = [e for e in get_ledger(limit=1_000_000, offset=0) if e.get("payload", {}).get("camera_id") == camera_id]
+    return {"camera_id": camera_id, "entries": entries[:limit], "count": min(len(entries), limit), "total": len(entries)}
+
+
 @router.get("/audit/verify")
 async def verify_audit_integrity():
     """
