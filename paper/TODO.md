@@ -44,3 +44,20 @@ Tick items with the date; add new ones at the bottom of their section. Mirror im
 - [ ] Confirm the footer credit ("Built by Gokul Annamalai and team") and add the repo URL via `NEXT_PUBLIC_REPO_URL`.
 - [ ] `/research` page: add the before/after trust-score table from `paper/results.md` (numbers not in the spec).
 - [ ] Optional: a real satellite source, or remove the Satellites layer toggle.
+
+## Frontend follow-ups (2026-10-16)
+- [ ] FULL AUDIT of frontend + backend edits: run backend tests (against a DB copy), `npm run lint/test/e2e`, check the Alerts timeline and demo labels after a reload
+- [ ] Tune basemap tones (land vs water contrast), Alerts chart axes and tooltips, remaining visual polish
+- [ ] Ledger tab shows "Chain broken at entry 1" on the dev DB: clear or archive `audit_ledger`, make tests use a temp DB (B6)
+- [ ] Add a "dataset provenance" chip in the console (seeded vs scanned) and word the live-eval tab (high_trust = positive there)
+- [ ] Decide on `frontend/AGENTS.md` (Next 16 generates it) and commit/ignore `frontend/qa` screenshots
+
+
+## Frontend rebuild (FRONTEND_SPEC.md section 22)
+- [x] 2026-10-14 Phase 1: scaffold, API contracts, facts sync, basemap config (basemap file NOT built)
+- [x] 2026-10-14 Phase 2: tokens, primitives, HoodGauge, TierTag, SourceNote, contrast table re-verified
+- [ ] Build `public/tiles/india.pmtiles` locally: `bash frontend/scripts/build-basemap.sh 11 <planet URL>`; record the size
+- [ ] Phase 3 onward (nav/footer, landing sections, 3D hood, gate explorer, console)
+- [ ] Backend touchpoints still awaiting approval: B1 server-side IP masking, B2 heartbeat decision, B3 operation ids/tags, B4 OpenAPI + WS/SSE docs and response models, B5 demo scenario list, B6 temp test DB / ledger reset, B7 `geo_precision`, B8 `/api/results`, B9 LICENSE
+- [ ] Decide: keep the dev-only `/design-system` route (not in spec section 4)?
+- [ ] Spec 3.2 / 7.6: change WA F1 from 0.753 to 0.752

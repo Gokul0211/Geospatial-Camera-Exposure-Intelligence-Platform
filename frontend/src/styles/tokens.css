@@ -1,0 +1,44 @@
+/*
+ * Design tokens (spec 5.1). The only palette. Dark, theme-locked.
+ * Amber is the one accent: meaning of colour = "attention". No second hue for good, bad or warning.
+ * Contrast ratios are recomputed by `npm run contrast` and asserted in tests/contrast.test.ts.
+ */
+:root {
+  color-scheme: dark;
+
+  --ink-0: #0a0c0b; /* page background, map water */
+  --ink-1: #101311; /* raised surface, map land */
+  --ink-2: #171b19; /* elevated surface, popovers */
+  --ink-3: #202522; /* hover surface, input fill */
+
+  --line: rgb(231 234 227 / 0.08);
+  --line-strong: rgb(231 234 227 / 0.16);
+
+  --bone: #e7eae3; /* primary text */
+  --bone-2: #a4aaa1; /* secondary text */
+  --bone-3: #6e746c; /* tertiary, only >= 18px or non-essential */
+
+  --signal: #f3a33a; /* sodium amber */
+  --signal-dim: rgb(243 163 58 / 0.14);
+
+  --inner-highlight: inset 0 1px 0 rgb(231 234 227 / 0.06);
+
+  /* z-scale mirror of src/lib/constants/z.ts. Nothing else is allowed. */
+  --z-canvas: 0;
+  --z-map: 5;
+  --z-content: 10;
+  --z-overlay: 15;
+  --z-sticky: 20;
+  --z-nav: 30;
+  --z-panel: 35;
+  --z-modal: 40;
+  --z-toast: 50;
+  --z-grain: 60;
+
+  /* motion tokens mirror src/lib/animations/tokens.ts */
+  --dur-micro: 160ms;
+  --dur-short: 260ms;
+  --dur-base: 520ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+}

@@ -1,0 +1,39 @@
+{
+  "camera_id": "856f395934242ea19321a91c7f8d88af",
+  "city": "Mumbai",
+  "manufacturer": "Bosch",
+  "owner_type": "corporate",
+  "auth_required": null,
+  "known_cve_count": 0,
+  "cve_categories": [],
+  "max_cvss": null,
+  "last_patch_date": null,
+  "trust_score_wa": 45,
+  "trust_score_advanced": 45,
+  "trust_score_probabilistic": 8,
+  "trust_score_ig_dctf": 45,
+  "trust_score_decayed": 45,
+  "trust_score": 45,
+  "cyber_trust_score": 45,
+  "action_tier": "low_trust",
+  "contributing_factors": [
+    "unauthenticated_stream",
+    "outdated_firmware",
+    "no_corroboration",
+    "critical_gate_unauthenticated_cap"
+  ],
+  "probabilistic_factors": [
+    "unauthenticated_stream",
+    "corporate_owner",
+    "outdated_firmware",
+    "no_corroboration"
+  ],
+  "decay_factor": 0.9999,
+  "hours_since_scan": 0.0,
+  "corroborating_cameras": [],
+  "signal_integrity_score": 1.0,
+  "drift_score": 0.0,
+  "integrity_gate_tripped": false,
+  "gate_status": "nominal",
+  "gate_multiplier": 1.0
+}

@@ -192,6 +192,9 @@ async def init_db():
         await _add_column_if_missing(db, "alerts", "signal_integrity_score", "REAL")
         await _add_column_if_missing(db, "alerts", "integrity_gate_tripped", "BOOLEAN")
         await _add_column_if_missing(db, "alerts", "drift_score", "REAL")
+        # is_demo: 1 when the alert came from the attack simulator or the demo scenario runner
+        # (routes.alerts.DEMO_MODE), so clients can keep labelling it after a reload.
+        await _add_column_if_missing(db, "alerts", "is_demo", "INTEGER DEFAULT 0")
 
         await db.commit()
 

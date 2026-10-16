@@ -131,7 +131,11 @@ async def get_alert_timeline(
     Returns a list of {hour, count, high_trust, medium_trust, low_trust} buckets
     for the AnalyticsPanel "Threats" tab time-series chart.
     """
-    cutoff = datetime.now(timezone.utc) - timedelta(hours=hours)
+    # `hours` whole-hour buckets that END with the current hour. (This used to start at now - hours with
+    # its minutes still attached, which put the current hour at index `hours`, outside the window, so the
+    # newest alerts never appeared in the timeline.)
+    now = datetime.now(timezone.utc)
+    start = now.replace(minute=0, second=0, microsecond=0) - timedelta(hours=hours - 1)
 
     async with aiosqlite.connect(DATABASE_PATH) as db:
         db.row_factory = aiosqlite.Row
@@ -143,7 +147,7 @@ async def get_alert_timeline(
                  WHERE detected_at >= ? AND city = ?
                  ORDER BY detected_at ASC
             """
-            params = (cutoff.isoformat(), city)
+            params = (start.isoformat(), city)
         else:
             query = """
                 SELECT detected_at, action_tier
@@ -151,18 +155,17 @@ async def get_alert_timeline(
                  WHERE detected_at >= ?
                  ORDER BY detected_at ASC
             """
-            params = (cutoff.isoformat(),)
+            params = (start.isoformat(),)
 
         async with db.execute(query, params) as cursor:
             rows = await cursor.fetchall()
 
-    # Build hourly buckets
-    timeline: dict[str, dict] = {}
+    # Build hourly buckets, keyed by their offset from `start`
+    timeline: dict[int, dict] = {}
     for i in range(hours):
-        bucket_time = cutoff + timedelta(hours=i)
-        bucket_label = bucket_time.strftime("%H:%M")
-        timeline[bucket_label] = {
-            "hour": bucket_label,
+        bucket_time = start + timedelta(hours=i)
+        timeline[i] = {
+            "hour": bucket_time.strftime("%H:00"),
             "count": 0,
             "high_trust": 0,
             "medium_trust": 0,
@@ -176,17 +179,13 @@ async def get_alert_timeline(
             )
             if detected.tzinfo is None:
                 detected = detected.replace(tzinfo=timezone.utc)
-            # Round down to the nearest hour
             bucket_dt = detected.replace(minute=0, second=0, microsecond=0)
-            # Find offset from cutoff
-            delta_hours = int((bucket_dt - cutoff.replace(minute=0, second=0, microsecond=0)).total_seconds() / 3600)
-            if 0 <= delta_hours < hours:
-                bucket_label = (cutoff + timedelta(hours=delta_hours)).strftime("%H:%M")
-                if bucket_label in timeline:
-                    timeline[bucket_label]["count"] += 1
-                    tier = row["action_tier"] or "low_trust"
-                    if tier in ("high_trust", "medium_trust", "low_trust"):
-                        timeline[bucket_label][tier] += 1
+            idx = int((bucket_dt - start).total_seconds() / 3600)
+            if 0 <= idx < hours:
+                timeline[idx]["count"] += 1
+                tier = row["action_tier"] or "low_trust"
+                if tier in ("high_trust", "medium_trust", "low_trust"):
+                    timeline[idx][tier] += 1
         except (ValueError, TypeError, AttributeError):
             continue
 

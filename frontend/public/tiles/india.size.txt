@@ -1,0 +1,1 @@
+maxzoom=11 bytes=263175029 built=2026-10-15T19:44:21Z source=build.protomaps.com/20261015.pmtiles bbox=68.1,6.7,97.4,35.7

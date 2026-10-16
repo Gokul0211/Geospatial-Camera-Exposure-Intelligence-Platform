@@ -247,6 +247,7 @@ async def _save_alert(
     signal_integrity_score: float | None = None,
     drift_score: float | None = None,
     integrity_gate_tripped: bool = False,
+    is_demo: bool = False,
 ) -> None:
     async with aiosqlite.connect(DATABASE_PATH) as db:
         await db.execute(
@@ -256,8 +257,8 @@ async def _save_alert(
                trust_score, contributing_factors, corroborated_by, action_tier,
                probabilistic_score, decayed_score, max_cvss, feature_embedding,
                notification_channel, notification_priority,
-               signal_integrity_score, drift_score, integrity_gate_tripped)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+               signal_integrity_score, drift_score, integrity_gate_tripped, is_demo)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 alert_id,
@@ -278,6 +279,7 @@ async def _save_alert(
                 signal_integrity_score,
                 drift_score,
                 1 if integrity_gate_tripped else 0,
+                1 if is_demo else 0,
             ),
         )
         await db.commit()
@@ -497,6 +499,7 @@ async def receive_detection_event(
         signal_integrity_score=live_signal_integrity,
         drift_score=live_drift_score,
         integrity_gate_tripped=live_gate_tripped,
+        is_demo=DEMO_MODE.get(),
     )
 
     # 12. Module E — Persistent Merkle audit ledger (BIoT SLR 2026)

@@ -1,0 +1,258 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          72.84318063281167,
+          19.060461438585957
+        ]
+      },
+      "properties": {
+        "id": "856f395934242ea19321a91c7f8d88af",
+        "ip": "203.0.113.10",
+        "lat": 19.060461438585957,
+        "lon": 72.84318063281167,
+        "device_type": "IP Camera",
+        "manufacturer": "Bosch",
+        "ports": [
+          443,
+          80
+        ],
+        "owner_org": "Wipro Systems",
+        "org": "Wipro Systems",
+        "owner_type": "corporate",
+        "ownership_confidence": "high",
+        "first_seen": "2024-03-01",
+        "last_seen": "2025-05-10",
+        "last_update": "2025-05-10",
+        "banner_snippet": "Server: Bosch-WebServer/2.0",
+        "os": null,
+        "isp": null,
+        "geo_source": "synthetic_demo",
+        "known_cve_count": 0,
+        "auth_required": null,
+        "trust_score": 45,
+        "action_tier": "low_trust",
+        "integrity_gate_tripped": false,
+        "trust_score_basis": "static_posture_no_corroboration",
+        "city": "Mumbai",
+        "cves": [],
+        "firmware_version": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          72.87209800654085,
+          19.034262423003256
+        ]
+      },
+      "properties": {
+        "id": "f489f334e2ca1076c48d8f89c7252855",
+        "ip": "203.0.113.11",
+        "lat": 19.034262423003256,
+        "lon": 72.87209800654085,
+        "device_type": "Network Device",
+        "manufacturer": "Samsung",
+        "ports": [
+          443,
+          37777,
+          80
+        ],
+        "owner_org": "HCL Corp",
+        "org": "HCL Corp",
+        "owner_type": "corporate",
+        "ownership_confidence": "high",
+        "first_seen": "2024-03-01",
+        "last_seen": "2025-05-10",
+        "last_update": "2025-05-10",
+        "banner_snippet": "Server: Samsung-WebServer/2.0",
+        "os": null,
+        "isp": null,
+        "geo_source": "synthetic_demo",
+        "known_cve_count": 0,
+        "auth_required": null,
+        "trust_score": 45,
+        "action_tier": "low_trust",
+        "integrity_gate_tripped": false,
+        "trust_score_basis": "static_posture_no_corroboration",
+        "city": "Mumbai",
+        "cves": [],
+        "firmware_version": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          72.86132200095317,
+          19.018623707620936
+        ]
+      },
+      "properties": {
+        "id": "8c886ad6dec38a0bca130544fbb04355",
+        "ip": "203.0.113.12",
+        "lat": 19.018623707620936,
+        "lon": 72.86132200095317,
+        "device_type": "DVR/NVR",
+        "manufacturer": "Dahua",
+        "ports": [
+          37777
+        ],
+        "owner_org": "HCL Corp",
+        "org": "HCL Corp",
+        "owner_type": "corporate",
+        "ownership_confidence": "high",
+        "first_seen": "2024-03-01",
+        "last_seen": "2025-05-10",
+        "last_update": "2025-05-10",
+        "banner_snippet": "Server: Dahua-WebServer/2.0",
+        "os": null,
+        "isp": null,
+        "geo_source": "synthetic_demo",
+        "known_cve_count": 0,
+        "auth_required": null,
+        "trust_score": 45,
+        "action_tier": "low_trust",
+        "integrity_gate_tripped": false,
+        "trust_score_basis": "static_posture_no_corroboration",
+        "city": "Mumbai",
+        "cves": [],
+        "firmware_version": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          72.84547226981972,
+          19.04383098000768
+        ]
+      },
+      "properties": {
+        "id": "f8909f2ebee4a1d0a6517fa96724ac2e",
+        "ip": "203.0.113.13",
+        "lat": 19.04383098000768,
+        "lon": 72.84547226981972,
+        "device_type": "DVR/NVR",
+        "manufacturer": "Honeywell",
+        "ports": [
+          8443,
+          8080,
+          80
+        ],
+        "owner_org": "Wipro Systems",
+        "org": "Wipro Systems",
+        "owner_type": "corporate",
+        "ownership_confidence": "high",
+        "first_seen": "2024-03-01",
+        "last_seen": "2025-05-10",
+        "last_update": "2025-05-10",
+        "banner_snippet": "Server: Honeywell-WebServer/2.0",
+        "os": null,
+        "isp": null,
+        "geo_source": "synthetic_demo",
+        "known_cve_count": 0,
+        "auth_required": null,
+        "trust_score": 45,
+        "action_tier": "low_trust",
+        "integrity_gate_tripped": false,
+        "trust_score_basis": "static_posture_no_corroboration",
+        "city": "Mumbai",
+        "cves": [],
+        "firmware_version": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          72.85005585531908,
+          19.03137345427637
+        ]
+      },
+      "properties": {
+        "id": "4acf79a9798733a91cf82d76f8aaad52",
+        "ip": "203.0.113.14",
+        "lat": 19.03137345427637,
+        "lon": 72.85005585531908,
+        "device_type": "IP Camera",
+        "manufacturer": "Dahua",
+        "ports": [
+          8443,
+          554
+        ],
+        "owner_org": "Infosys Technologies",
+        "org": "Infosys Technologies",
+        "owner_type": "corporate",
+        "ownership_confidence": "high",
+        "first_seen": "2024-03-01",
+        "last_seen": "2025-05-10",
+        "last_update": "2025-05-10",
+        "banner_snippet": "Server: Dahua-WebServer/2.0",
+        "os": null,
+        "isp": null,
+        "geo_source": "synthetic_demo",
+        "known_cve_count": 0,
+        "auth_required": null,
+        "trust_score": 45,
+        "action_tier": "low_trust",
+        "integrity_gate_tripped": false,
+        "trust_score_basis": "static_posture_no_corroboration",
+        "city": "Mumbai",
+        "cves": [],
+        "firmware_version": null
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          72.85678045024115,
+          19.049183768579116
+        ]
+      },
+      "properties": {
+        "id": "1e27223525e87e82ae28692a3507ebe1",
+        "ip": "203.0.113.15",
+        "lat": 19.049183768579116,
+        "lon": 72.85678045024115,
+        "device_type": "Network Device",
+        "manufacturer": "Axis",
+        "ports": [
+          8443,
+          8080
+        ],
+        "owner_org": "Infosys Technologies",
+        "org": "Infosys Technologies",
+        "owner_type": "corporate",
+        "ownership_confidence": "high",
+        "first_seen": "2024-03-01",
+        "last_seen": "2025-05-10",
+        "last_update": "2025-05-10",
+        "banner_snippet": "Server: Axis-WebServer/2.0",
+        "os": null,
+        "isp": null,
+        "geo_source": "synthetic_demo",
+        "known_cve_count": 0,
+        "auth_required": null,
+        "trust_score": 45,
+        "action_tier": "low_trust",
+        "integrity_gate_tripped": false,
+        "trust_score_basis": "static_posture_no_corroboration",
+        "city": "Mumbai",
+        "cves": [],
+        "firmware_version": null
+      }
+    }
+  ]
+}

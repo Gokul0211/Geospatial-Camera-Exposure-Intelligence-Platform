@@ -1,0 +1,4 @@
+data: {"type": "text", "content": "Analysis unavailable \u2014 API key not configured."}
+
+data: {"type": "done", "risk_level": "MEDIUM"}
+

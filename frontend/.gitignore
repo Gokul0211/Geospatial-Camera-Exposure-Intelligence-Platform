@@ -1,0 +1,12 @@
+node_modules
+.next
+out
+next-env.d.ts
+*.tsbuildinfo
+.env.local
+.env*.local
+test-results
+playwright-report
+coverage
+# Self-hosted basemap: built locally by scripts/build-basemap.sh, too large for git
+public/tiles/*.pmtiles

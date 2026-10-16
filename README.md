@@ -8,7 +8,7 @@
 
 The scoring method is **IG-DCTF** (Integrity-Gated Dual-Channel Trust Fusion). A journal manuscript describing it is in [`paper/`](paper/).
 
-> **Status.** The scoring engine, API, evaluation harness and paper are working and tested. The previous dashboard was removed and the new web app is specified in [`FRONTEND_SPEC.md`](FRONTEND_SPEC.md) but not built yet. Until then, the backend is fully usable through its interactive API docs at `http://localhost:8000/docs`.
+> **Status.** The scoring engine, API, evaluation harness, paper and the Next.js web app (`frontend/`: landing page, research, lab, live console) are working. The web app is specified in [`FRONTEND_SPEC.md`](FRONTEND_SPEC.md). The backend is also usable on its own through its interactive API docs at `http://localhost:8000/docs`.
 
 ---
 
@@ -111,11 +111,23 @@ python backend/main.py            # API on http://localhost:8000, docs at /docs
 
 The API starts without any keys. Shodan refresh, news and the AI risk brief need their keys; everything else works from the cached database.
 
+The web app (Node 20.9 or newer):
+
+```bash
+cd frontend
+cp .env.example .env.local        # NEXT_PUBLIC_COBRA_API_URL=http://localhost:8000
+npm install
+npm run sync                      # facts from paper/data/results.json, brand assets from assets/logo
+npm run dev                       # http://localhost:3000
+```
+
+Without a basemap file the console map shows country outlines only. For streets and labels, build the self-hosted India basemap once (needs the [`pmtiles` CLI](https://github.com/protomaps/go-pmtiles); about 263 MB at zoom 11, git-ignored): `bash scripts/build-basemap.sh 11 <a build URL from maps.protomaps.com/builds>`.
+
 ```bash
 docker compose up --build         # backend :8000, frontend :3000, video pipeline
 ```
 
-The compose file expects a `frontend/` directory, which does not exist until the web app is scaffolded from [`FRONTEND_SPEC.md`](FRONTEND_SPEC.md). Start the backend alone with `docker compose up --build backend`.
+The frontend image has not been built or tested yet. Start the backend alone with `docker compose up --build backend`.
 
 ### Configuration
 
@@ -151,7 +163,7 @@ Read routes are open on purpose: the point of the project is public transparency
 ## Tests and evaluation
 
 ```bash
-pytest backend/tests video_pipeline/tests eval/test_eval_harness.py     # 431 passed on 2026-10-12
+pytest backend/tests video_pipeline/tests eval/test_eval_harness.py     # 434 passed on 2026-10-16
 python eval/run_eval.py --verbose                                        # 4-model comparison
 python paper/scripts/compute_results.py                                  # regenerate paper/results.md
 ```

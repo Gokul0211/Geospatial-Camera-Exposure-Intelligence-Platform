@@ -1,0 +1,12 @@
+{
+  "tiers": {
+    "high_min": 80,
+    "medium_min": 50
+  },
+  "gate": {
+    "theta_low": 0.5,
+    "theta_high": 0.85,
+    "floor_multiplier": 0.3,
+    "hard_cap": 30
+  }
+}
